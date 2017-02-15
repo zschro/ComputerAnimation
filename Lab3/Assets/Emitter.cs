@@ -17,12 +17,10 @@ public class Emitter : MonoBehaviour {
 	void Update () {
 		AddBalls ();
 		UpdateBalls ();
-
 	}
 
-
 	private void AddBalls(){
-		int randomFrame = Random.Range (1, 100);
+		int randomFrame = Random.Range (1, 2);
 		if (currentBallCount < BallCount && (Time.frameCount % randomFrame) ==0 ) {
 			Balls.Add (new Ball ());
 			currentBallCount++;
@@ -49,9 +47,9 @@ public class Emitter : MonoBehaviour {
 			//Vector3 randomStart = new Vector3(Random.Range (-5.0f, 5.0f),.5f,Random.Range (-5.0f, 5.0f));
 			Vector3 randomStart = new Vector3(Random.Range (-2.5f, 2.5f),30.0f,Random.Range (-2.5f, 2.5f));
 			obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-			obj.GetComponent<MeshRenderer>().material.color = Random.ColorHSV();
+			obj.GetComponent<MeshRenderer>().material.color = new Color(Random.Range(0.0f,0.5f),0.5f,0.5f);
 			obj.transform.position = randomStart;
-			Vector3 randomStartVelocity = new Vector3(Random.Range (-.5f, .5f),Random.Range (-0.5f, 0.1f),Random.Range (-0.1f, 1.0f));
+			Vector3 randomStartVelocity = new Vector3(Random.Range (-.2f, .2f),Random.Range (-0.2f, 0.1f),Random.Range (-0.1f, 0.50f));
 			velocity = randomStartVelocity;
 			setDestroy = false;
 			//velocity = new Vector3(0.1f,0.1f,0.1f);
@@ -80,7 +78,7 @@ public class Emitter : MonoBehaviour {
 		}
 		private void UpdateColor(){
 			var color = obj.GetComponent<MeshRenderer> ().material.color;
-			color.r = color.r * 1.01f;
+			color.r = color.r * 1.001f;
 			color.g = color.g * 0.99f;
 			color.b = color.b * 0.99f;
 			obj.GetComponent<MeshRenderer> ().material.color = color;
@@ -90,20 +88,26 @@ public class Emitter : MonoBehaviour {
 		}
 		private void CheckWallCollision(){
 			Vector3 updatePos = new Vector3 (obj.transform.position.x + velocity.x, obj.transform.position.y + velocity.y, obj.transform.position.z + velocity.z);
+			// E(p) = ax + by + cz + d = N . p + d
+			// E(p) < 0 collision
 
 			if ((updatePos.x + updatePos.y) < -15.0f ) {
-				float angle = Mathf.Atan2 (velocity.y, velocity.x);
-				angle += Mathf.PI / 4.0f;
-				velocity.x = Mathf.Sin (angle);
-				velocity.y = Mathf.Cos (angle);
+				var wallNormal = new Vector3 (1.0f, 1.0f, 0f).normalized;
+				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
+				var w = u - velocity;
+				velocity = w - u;
 			}
 			if ((updatePos.x - updatePos.y) > 15.0f ) {
-			//	float angle = Mathf.Atan2 (velocity.y, velocity.x);
-				velocity.x = -velocity.x;
+				var wallNormal = new Vector3 (-1.0f, 1.0f, 0f).normalized;
+				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
+				var w = u - velocity;
+				velocity = w - u;
 			}
 			if ((updatePos.z - updatePos.y) > 10.0f ) {
-			//	float angle = Mathf.Atan2 (velocity.y, velocity.x);
-				velocity.z = -velocity.z;
+				var wallNormal = new Vector3 (0.0f, 1.0f, -1.0f).normalized;
+				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
+				var w = u - velocity;
+				velocity = w - u;
 			}
 //			if ((updatePos.z + updatePos.y) < -10.0f ) {
 //				float angle = Mathf.Atan2 (velocity.y, velocity.x);
