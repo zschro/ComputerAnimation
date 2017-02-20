@@ -8,6 +8,7 @@ public class Emitter : MonoBehaviour {
 	public int BallCount;
 	public static int currentBallCount;
     public static float startVelocity = 0.2f;
+    public static int randomFrame = 2;
 	// Use this for initialization
 	void Start () {
 		Balls = new List<Ball> ();
@@ -24,12 +25,26 @@ public class Emitter : MonoBehaviour {
         }
         if (Input.GetKey(KeyCode.S))
         {
-            startVelocity -= .01f;
+            if(startVelocity > .01f)
+            {
+                startVelocity -= .01f;
+            }    
+        }
+        if (Input.GetKey(KeyCode.A))
+        {
+            randomFrame++;
+        }
+        if (Input.GetKey(KeyCode.D))
+        {
+            if (randomFrame > 2)
+            {
+                randomFrame--;
+            }
         }
     }
 
 	private void AddBalls(){
-		int randomFrame = Random.Range (1, 2);
+		//int randomFrame = Random.Range (1, 2);
 		if (currentBallCount < BallCount && (Time.frameCount % randomFrame) ==0 ) {
 			Balls.Add (new Ball ());
 			currentBallCount++;
@@ -58,7 +73,7 @@ public class Emitter : MonoBehaviour {
 			obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 			obj.GetComponent<MeshRenderer>().material.color = new Color(Random.Range(0.0f,0.5f),0.5f,0.5f);
 			obj.transform.position = randomStart;
-			Vector3 randomStartVelocity = new Vector3(Random.Range (-startVelocity, startVelocity),Random.Range (-0.2f, 0.1f),Random.Range (-0.1f, 0.50f));
+			Vector3 randomStartVelocity = new Vector3(Random.Range (-startVelocity, startVelocity),Random.Range (-startVelocity, startVelocity + 0.1f),Random.Range (-startVelocity-0.1f, startVelocity + 0.50f));
 			velocity = randomStartVelocity;
 			setDestroy = false;
 			//velocity = new Vector3(0.1f,0.1f,0.1f);
