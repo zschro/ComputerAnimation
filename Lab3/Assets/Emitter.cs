@@ -7,13 +7,20 @@ public class Emitter : MonoBehaviour {
 	public static List<Ball> Balls;
 	public int BallCount;
 	public static int currentBallCount;
-    public static float startVelocity = 0.2f;
-    public static int randomFrame = 5;
+    public static float startVelocity = 0.1f;
+    public static int avgBallAddSpeed = 5;
 	public static Vector3 start = new Vector3 (0f, 30f, 0f);
+
+	private static readonly Vector3 leftWallNormal = new Vector3 (0.7f, 0.7f);
+	private static readonly Vector3 rightWallNormal = new Vector3 (-0.7f, 0.7f);
+	private static readonly Vector3 rearWallNormal = new Vector3 (0.0f,0.7f, -0.7f);
+
+	private static readonly float dampeningEffect = 1.0f;
+
 	// Use this for initialization
 	void Start () {
 		Balls = new List<Ball> ();
-		currentBallCount = 0;	
+		currentBallCount = 0;
 	}
 	
 	// Update is called once per frame
@@ -21,51 +28,16 @@ public class Emitter : MonoBehaviour {
 		AddBalls ();
 		UpdateBalls ();
 		MoveStart ();
-        if (Input.GetKey(KeyCode.W))
-        {
-            startVelocity += .01f;
-        }
-        if (Input.GetKey(KeyCode.S))
-        {
-            if(startVelocity > .01f)
-            {
-                startVelocity -= .01f;
-            }    
-        }
-        if (Input.GetKey(KeyCode.A))
-        {
-            randomFrame++;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            if (randomFrame > 1)
-            {
-                randomFrame--;
-            }
-        }
+		UpdateParams ();
     }
-	private void MoveStart(){
-		if (Input.GetKey(KeyCode.UpArrow)){
-			start.z +=0.1f;
-		}
-		if (Input.GetKey(KeyCode.LeftArrow)){
-			start.x -=0.1f;
-		}
-		if (Input.GetKey(KeyCode.RightArrow)){
-			start.x +=0.1f;
-		}
-		if (Input.GetKey(KeyCode.DownArrow)){
-			start.z -=0.1f;
-		}
-		var capsule = GameObject.Find ("Capsule");
-		capsule.transform.position = start;
-	}
 
 	private void AddBalls(){
-		//int randomFrame = Random.Range (1, 2);
-		if (currentBallCount < BallCount && (Time.frameCount % randomFrame) ==0 ) {
-			Balls.Add (new Ball ());
-			currentBallCount++;
+		for (int i = 0; i < 3; i++) {
+			int randomFrame = Random.Range (1, avgBallAddSpeed);
+			if (currentBallCount < BallCount && (Time.frameCount % randomFrame) ==0 ) {
+				Balls.Add (new Ball ());
+				currentBallCount++;
+			}
 		}
 	}
 	private void UpdateBalls(){
@@ -80,7 +52,49 @@ public class Emitter : MonoBehaviour {
 				i--;
 			}
 		}
+
 	}
+	private void UpdateParams(){
+		if (Input.GetKey(KeyCode.W))
+		{
+			startVelocity += .01f;
+		}
+		if (Input.GetKey(KeyCode.S))
+		{
+			if(startVelocity > .01f)
+			{
+				startVelocity -= .01f;
+			}    
+		}
+		if (Input.GetKey(KeyCode.A))
+		{
+			avgBallAddSpeed++;
+		}
+		if (Input.GetKey(KeyCode.D))
+		{
+			if (avgBallAddSpeed > 1)
+			{
+				avgBallAddSpeed--;
+			}
+		}
+	}
+	private void MoveStart(){
+		if (Input.GetKey(KeyCode.UpArrow)){
+			start.z +=0.2f;
+		}
+		if (Input.GetKey(KeyCode.LeftArrow)){
+			start.x -=0.2f;
+		}
+		if (Input.GetKey(KeyCode.RightArrow)){
+			start.x +=0.2f;
+		}
+		if (Input.GetKey(KeyCode.DownArrow)){
+			start.z -=0.2f;
+		}
+		var capsule = GameObject.Find ("Capsule");
+		capsule.transform.position = start;
+	}
+
 	public class Ball{
 		public GameObject obj;
 		public Vector3 velocity;
@@ -92,13 +106,13 @@ public class Emitter : MonoBehaviour {
 			obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 			obj.GetComponent<MeshRenderer>().material.color = new Color(Random.Range(0.0f,0.5f),0.5f,0.5f);
 			obj.transform.position = randomStart;
-			Vector3 randomStartVelocity = new Vector3(Random.Range (-startVelocity, startVelocity),Random.Range (-startVelocity, startVelocity + 0.1f),Random.Range (-startVelocity-0.1f, startVelocity + 0.50f));
+			Vector3 randomStartVelocity = new Vector3(Random.Range (-startVelocity, startVelocity),Random.Range (-startVelocity, startVelocity),Random.Range (-startVelocity, startVelocity + 0.50f));
 			velocity = randomStartVelocity;
 			setDestroy = false;
 			//velocity = new Vector3(0.1f,0.1f,0.1f);
 		}
 		public void Update(){
-			velocity = velocity - new Vector3 (0.0f, 0.01f, 0.0f); //gravity
+			velocity = velocity - new Vector3 (0.0f, 0.015f, 0.0f); //gravity
 			if (velocity.magnitude < 0.1f) {
 				setDestroy = true;
 			}
@@ -114,10 +128,10 @@ public class Emitter : MonoBehaviour {
 		private void CheckFloorCollision(){
 			float height = obj.transform.position.y + velocity.y;
 			if (height < 0.5f) {
-				velocity.y = -velocity.y *0.6f; //bounce with dampening
-				velocity.x = velocity.x *0.9f;
-				velocity.z = velocity.z *0.9f;
+				velocity.y = -velocity.y;
+				velocity = velocity * dampeningEffect;
 			}
+
 		}
 		private void UpdateColor(){
 			var color = obj.GetComponent<MeshRenderer> ().material.color;
@@ -125,7 +139,7 @@ public class Emitter : MonoBehaviour {
 			color.g = color.g * 0.99f;
 			color.b = color.b * 0.99f;
 			obj.GetComponent<MeshRenderer> ().material.color = color;
-			if(color.r > 1.0f){
+			if(color.r > 1.1f && color.g < .2f && color.b < .2f){
 				setDestroy = true;
 			}
 		}
@@ -133,29 +147,32 @@ public class Emitter : MonoBehaviour {
 			Vector3 updatePos = new Vector3 (obj.transform.position.x + velocity.x, obj.transform.position.y + velocity.y, obj.transform.position.z + velocity.z);
 			// E(p) = ax + by + cz + d = N . p + d
 			// E(p) < 0 collision
-
+			bool hit = false;
 			if ((updatePos.x + updatePos.y) < -15.0f ) {
-				var wallNormal = new Vector3 (1.0f, 1.0f, 0f).normalized;
+				var wallNormal = leftWallNormal;
 				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
-				var w = u - velocity;
+				var w = velocity - u;
 				velocity = w - u;
+				hit = true;
 			}
 			if ((updatePos.x - updatePos.y) > 15.0f ) {
-				var wallNormal = new Vector3 (-1.0f, 1.0f, 0f).normalized;
+				var wallNormal = rightWallNormal;
 				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
-				var w = u - velocity;
+				var w = velocity - u ;
 				velocity = w - u;
+				hit = true;
 			}
 			if ((updatePos.z - updatePos.y) > 10.0f ) {
-				var wallNormal = new Vector3 (0.0f, 1.0f, -1.0f).normalized;
+				var wallNormal = rearWallNormal;
 				var u = (Vector3.Dot (velocity, wallNormal) / Vector3.Dot (wallNormal, wallNormal)) * wallNormal ;
-				var w = u - velocity;
+				var w = velocity - u;
 				velocity = w - u;
+				hit = true;
 			}
-//			if ((updatePos.z + updatePos.y) < -10.0f ) {
-//				float angle = Mathf.Atan2 (velocity.y, velocity.x);
-//				velocity.z = -velocity.z;
-//			}
+			if (hit) {
+				velocity = velocity * dampeningEffect; //slight dampening for wall hit
+			}
 		}
+
 	}
 }
