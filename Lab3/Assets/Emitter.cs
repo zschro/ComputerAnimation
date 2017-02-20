@@ -8,7 +8,8 @@ public class Emitter : MonoBehaviour {
 	public int BallCount;
 	public static int currentBallCount;
     public static float startVelocity = 0.2f;
-    public static int randomFrame = 2;
+    public static int randomFrame = 5;
+	public static Vector3 start = new Vector3 (0f, 30f, 0f);
 	// Use this for initialization
 	void Start () {
 		Balls = new List<Ball> ();
@@ -19,6 +20,7 @@ public class Emitter : MonoBehaviour {
 	void Update () {
 		AddBalls ();
 		UpdateBalls ();
+		MoveStart ();
         if (Input.GetKey(KeyCode.W))
         {
             startVelocity += .01f;
@@ -36,12 +38,28 @@ public class Emitter : MonoBehaviour {
         }
         if (Input.GetKey(KeyCode.D))
         {
-            if (randomFrame > 2)
+            if (randomFrame > 1)
             {
                 randomFrame--;
             }
         }
     }
+	private void MoveStart(){
+		if (Input.GetKey(KeyCode.UpArrow)){
+			start.z +=0.1f;
+		}
+		if (Input.GetKey(KeyCode.LeftArrow)){
+			start.x -=0.1f;
+		}
+		if (Input.GetKey(KeyCode.RightArrow)){
+			start.x +=0.1f;
+		}
+		if (Input.GetKey(KeyCode.DownArrow)){
+			start.z -=0.1f;
+		}
+		var capsule = GameObject.Find ("Capsule");
+		capsule.transform.position = start;
+	}
 
 	private void AddBalls(){
 		//int randomFrame = Random.Range (1, 2);
@@ -69,7 +87,8 @@ public class Emitter : MonoBehaviour {
 		public bool setDestroy;
 		public Ball(){
 			//Vector3 randomStart = new Vector3(Random.Range (-5.0f, 5.0f),.5f,Random.Range (-5.0f, 5.0f));
-			Vector3 randomStart = new Vector3(Random.Range (-2.5f, 2.5f),30.0f,Random.Range (-2.5f, 2.5f));
+			Vector3 randomStart = new Vector3(Random.Range (-2.5f, 2.5f),0f,Random.Range (-2.5f, 2.5f));
+			randomStart += start;
 			obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 			obj.GetComponent<MeshRenderer>().material.color = new Color(Random.Range(0.0f,0.5f),0.5f,0.5f);
 			obj.transform.position = randomStart;
