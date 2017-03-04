@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Hunter : MonoBehaviour {
-	private float v;
+	private Vector3 velocity;
 	private List<GameObject> obstacles = new List<GameObject>();
-	private Vector3 orientationVector;
-	private float visionLimit = 0.1f;
+	private List<GameObject> walls = new List<GameObject>();
+	private float visionLimit = 0.5f;
 
 	void Start () {
-		v = 0.02f;
-		orientationVector = new Vector3 (0.0f, 0.0f, 1.0f);
+		velocity = new Vector3 (0.0f, 0.0f, 0.06f);
 		LoadObstacles ();
 	}
 
@@ -20,21 +19,20 @@ public class Hunter : MonoBehaviour {
 		Move();
 	}
 	private void Steer(){
-		
+		CheckWallCollision ();
 		foreach (var obstacle in obstacles) {
+			Vector3 orientationVector = velocity.normalized;
 			var agentToObstacle = obstacle.transform.position - this.transform.position;
 			agentToObstacle.Normalize ();
 			float agentToObstacleScalar = Vector3.Dot (agentToObstacle, orientationVector);
 			if (agentToObstacleScalar < visionLimit) {
-				if (Vector3.Magnitude (transform.position - obstacle.transform.position) < 1.5f) {
+				if (Vector3.Magnitude (transform.position - obstacle.transform.position) < 0.5f) {
 					var leftTurn = orientationVector + new Vector3 (.05f, 0.0f, 0.0f);
 					var rightTurn = orientationVector - new Vector3 (.05f, 0.0f, 0.0f);
 					if (Vector3.Dot (agentToObstacle, leftTurn) < Vector3.Dot (agentToObstacle, rightTurn)) {
-						orientationVector += new Vector3 (0.005f, 0.0f, 0.0f);
-						transform.rotation *= Quaternion.LookRotation (orientationVector);
+						transform.Rotate (0.0f, 5.0f, 0.0f);
 					} else {
-						orientationVector -= new Vector3 (0.005f, 0.0f, 0.0f);
-						transform.rotation *= Quaternion.LookRotation (orientationVector);
+						transform.Rotate (0.0f, -5.0f, 0.0f);
 					}
 				}
 			}
@@ -42,10 +40,42 @@ public class Hunter : MonoBehaviour {
 
 	}
 	private void Move(){
-		transform.Translate(new Vector3(0.0f,0.0f,v),Space.Self);
+		transform.Translate (velocity);
 	}
 	private void LoadObstacles(){
 		obstacles.AddRange(GameObject.FindGameObjectsWithTag ("obstacle"));
-		obstacles.AddRange(GameObject.FindGameObjectsWithTag ("wall"));
+		walls.AddRange(GameObject.FindGameObjectsWithTag ("wall"));
+	}
+	private void CheckWallCollision(){
+		Vector3 updatePos = new Vector3 (transform.position.x + velocity.x, transform.position.y + velocity.y,
+			transform.position.z + velocity.z);
+		if (updatePos.x > 5.0f) {
+			if (velocity.x > velocity.z) {
+				transform.Rotate (new Vector3 (0.0f, 120, 0.0f));
+			} else {
+				transform.Rotate (new Vector3 (0.0f, -120, 0.0f));
+			}
+		}
+		if (updatePos.x < -5.0f) {
+			if (velocity.x > velocity.z) {
+				transform.Rotate (new Vector3 (0.0f, -120, 0.0f));
+			} else {
+				transform.Rotate (new Vector3 (0.0f, 120, 0.0f));
+			}
+		}
+		if (updatePos.z > 5.0f) {
+			if (velocity.x > velocity.z) {
+				transform.Rotate (new Vector3 (0.0f, 120, 0.0f));
+			} else {
+				transform.Rotate (new Vector3 (0.0f, -120, 0.0f));
+			}
+		}
+		if (updatePos.z < -5.0f) {
+			if (velocity.x > velocity.z) {
+				transform.Rotate (new Vector3 (0.0f, -120, 0.0f));
+			} else {
+				transform.Rotate (new Vector3 (0.0f, 120, 0.0f));
+			}
+		}
 	}
 }
