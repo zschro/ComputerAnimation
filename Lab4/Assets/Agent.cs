@@ -8,7 +8,6 @@ public class Agent : MonoBehaviour {
 	public Shader lineShader;
 	public GameObject directionLine;
 	private bool stop = false;
-	private static List<GameObject> allPrey;
 
 	protected virtual void Wander(){
 		if (stop)
@@ -31,17 +30,18 @@ public class Agent : MonoBehaviour {
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
 		float wallDistance = 18.0f;
+		float wallAvoidanceFactor = 0.2f;
 		if (updatePos.x > wallDistance) {
-			velocity.x -= 0.15f;
+			velocity.x -= wallAvoidanceFactor;
 		}
 		if (updatePos.x < -wallDistance) {
-			velocity.x += 0.15f;
+			velocity.x += wallAvoidanceFactor;
 		}
 		if (updatePos.z > wallDistance) {
-			velocity.z -= 0.15f;
+			velocity.z -= wallAvoidanceFactor;
 		}
 		if (updatePos.z < -wallDistance) {
-			velocity.z += 0.15f;
+			velocity.z += wallAvoidanceFactor;
 		}
 	}
 		

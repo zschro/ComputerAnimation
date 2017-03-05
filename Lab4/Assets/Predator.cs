@@ -55,7 +55,12 @@ public class Predator : Agent {
 		lr.SetPosition(1, transform.position + (velocity * 5.0f));
 		transform.Translate (velocity * 0.15f);
 		if (agentToVertex.magnitude < 1.0f) {
+			preyTarget.tag = "dead";
 			Destroy (preyTarget);
+			preyTarget = null;
+			canSeePrey = false;
+		}
+		if (agentToVertex.magnitude > 6.0f) {
 			preyTarget = null;
 			canSeePrey = false;
 		}
