@@ -7,17 +7,21 @@ public class Agent : MonoBehaviour {
 	public List<GameObject> visionLines;
 	public Shader lineShader;
 	public GameObject directionLine;
+	private bool stop = false;
+	private static List<GameObject> allPrey;
 
 	protected virtual void Wander(){
+		if (stop)
+			return;
 		AvoidWalls ();
 		AvoidObstacles ();
 		velocity += new Vector3 (Random.Range (-0.2f, 0.2f), 0.0f, Random.Range (-0.2f, 0.2f));
 		velocity.Normalize ();
 		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
-		transform.Translate (velocity * 0.1f);
 		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
 		lr.SetPosition(0, transform.position);
 		lr.SetPosition(1, transform.position + (velocity * 5.0f));
+		transform.Translate (velocity * 0.1f);
 	}
 
 	protected virtual void AvoidObstacles(){
@@ -26,12 +30,18 @@ public class Agent : MonoBehaviour {
 
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
-		float wallDistance = 19.5f;
-		if (updatePos.x > wallDistance || updatePos.x < -wallDistance) {
-			velocity.x = -velocity.x;
+		float wallDistance = 18.0f;
+		if (updatePos.x > wallDistance) {
+			velocity.x -= 0.15f;
 		}
-		if (updatePos.z > wallDistance || updatePos.z < -wallDistance) {
-			velocity.z = -velocity.z;
+		if (updatePos.x < -wallDistance) {
+			velocity.x += 0.15f;
+		}
+		if (updatePos.z > wallDistance) {
+			velocity.z -= 0.15f;
+		}
+		if (updatePos.z < -wallDistance) {
+			velocity.z += 0.15f;
 		}
 	}
 		
@@ -48,9 +58,7 @@ public class Agent : MonoBehaviour {
 		lr.startWidth = 0.1f;
 		lr.endWidth = 5.0f;
 	}
-
-	//	private void LoadObstacles(){
-	//		obstacles.AddRange(GameObject.FindGameObjectsWithTag ("obstacle"));
-	//		walls.AddRange(GameObject.FindGameObjectsWithTag ("wall"));
-	//	}
+	protected void Stop(){
+		stop = true;
+	}
 }
