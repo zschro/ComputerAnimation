@@ -51,7 +51,7 @@ public class Agent : MonoBehaviour {
 
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
-		float wallDistance = 4.5f;
+		float wallDistance = 24.5f;
 		float wallAvoidanceFactor = 0.6f;
 		if (updatePos.x > wallDistance) {
 			velocity.x -= wallAvoidanceFactor;

@@ -9,9 +9,11 @@ public class Prey : Agent {
 	private int sprintCount = 0;
 	// Use this for initialization
 	void Start () {
-		velocity = new Vector3 (0.0f, 0.0f, 0.00f);
+		velocity = new Vector3 (0.0f, 0.0f, 0.0f);
 		canSeePredator = false;
 		SetupVisionLines (Color.blue);
+		var mat = this.GetComponent<MeshRenderer> ().material;
+		mat.color = Color.blue;
 	}
 	
 	// Update is called once per frame
@@ -57,7 +59,10 @@ public class Prey : Agent {
 		lr.SetPosition(1, transform.position + (velocity * 5.0f));
 		transform.Translate (velocity * 0.2f);
 		sprintCount--;
-		if(sprintCount < 1)
+		if (sprintCount < 1) {
 			canSeePredator = false;
+			var mat = this.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.blue;
+		}
 	}
 }
