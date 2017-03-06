@@ -30,22 +30,21 @@ public class Agent : MonoBehaviour {
         foreach (var obstacle in GameObject.FindGameObjectsWithTag("obstacle"))
         {
             float obsAvoidanceFactor = 0.2f;
-            if (updatePos.x - obstacle.transform.position.x < 1f)
-            {
-                velocity.x += obsAvoidanceFactor;
-            }
-            if (updatePos.x - obstacle.transform.position.x < -1f)
-            {
-                velocity.x -= obsAvoidanceFactor;
-            }
-            if (updatePos.z - obstacle.transform.position.x < 1f)
-            {
-                velocity.z += obsAvoidanceFactor;
-            }
-            if (updatePos.z - obstacle.transform.position.x < -1f)
-            {
-                velocity.z -= obsAvoidanceFactor;
-            }
+			if ((updatePos - obstacle.transform.position).magnitude < 1.0f) {
+				
+				if (updatePos.x - obstacle.transform.position.x < 1f) {
+					velocity.x += obsAvoidanceFactor;
+				}
+				if (updatePos.x - obstacle.transform.position.x < -1f) {
+					velocity.x -= obsAvoidanceFactor;
+				}
+				if (updatePos.z - obstacle.transform.position.z < 1f) {
+					velocity.z += obsAvoidanceFactor;
+				}
+				if (updatePos.z - obstacle.transform.position.z < -1f) {
+					velocity.z -= obsAvoidanceFactor;
+				}
+			}
         }
 
     }
@@ -53,7 +52,7 @@ public class Agent : MonoBehaviour {
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
 		float wallDistance = 4.5f;
-		float wallAvoidanceFactor = 0.2f;
+		float wallAvoidanceFactor = 0.6f;
 		if (updatePos.x > wallDistance) {
 			velocity.x -= wallAvoidanceFactor;
 		}

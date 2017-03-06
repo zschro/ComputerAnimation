@@ -46,10 +46,10 @@ public class Prey : Agent {
 	}
 
 	private void RunAway(){
-		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
-		velocity += agentToVertex.normalized * 0.5f;
-		velocity.Normalize ();
 		AvoidWalls ();
+		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
+		velocity += (agentToVertex.normalized * 0.1f);
+		velocity.Normalize ();
 		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
 		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
 		lr.SetPosition(0, transform.position);
