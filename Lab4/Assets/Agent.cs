@@ -9,6 +9,8 @@ public class Agent : MonoBehaviour {
 	public GameObject directionLine;
 	private bool stop = false;
 
+    private GameObject obstacle;
+
 	protected virtual void Wander(){
 		if (stop)
 			return;
@@ -24,12 +26,33 @@ public class Agent : MonoBehaviour {
 	}
 
 	protected virtual void AvoidObstacles(){
+        Vector3 updatePos = transform.position + velocity;
+        foreach (var obstacle in GameObject.FindGameObjectsWithTag("obstacle"))
+        {
+            float obsAvoidanceFactor = 0.2f;
+            if (updatePos.x - obstacle.transform.position.x < 1f)
+            {
+                velocity.x += obsAvoidanceFactor;
+            }
+            if (updatePos.x - obstacle.transform.position.x < -1f)
+            {
+                velocity.x -= obsAvoidanceFactor;
+            }
+            if (updatePos.z - obstacle.transform.position.x < 1f)
+            {
+                velocity.z += obsAvoidanceFactor;
+            }
+            if (updatePos.z - obstacle.transform.position.x < -1f)
+            {
+                velocity.z -= obsAvoidanceFactor;
+            }
+        }
 
-	}
+    }
 
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
-		float wallDistance = 18.0f;
+		float wallDistance = 4.5f;
 		float wallAvoidanceFactor = 0.2f;
 		if (updatePos.x > wallDistance) {
 			velocity.x -= wallAvoidanceFactor;
