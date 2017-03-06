@@ -22,7 +22,7 @@ public class Agent : MonoBehaviour {
 		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
 		lr.SetPosition(0, transform.position);
 		lr.SetPosition(1, transform.position + (velocity * 5.0f));
-		transform.Translate (velocity * 0.1f);
+		transform.Translate (velocity * 0.08f);
 	}
 
 	protected virtual void AvoidObstacles(){

@@ -9,7 +9,7 @@ public class Prey : Agent {
 	private int sprintCount = 0;
 	// Use this for initialization
 	void Start () {
-		velocity = new Vector3 (0.0f, 0.0f, 0.04f);
+		velocity = new Vector3 (0.0f, 0.0f, 0.00f);
 		canSeePredator = false;
 		SetupVisionLines (Color.blue);
 	}
@@ -47,6 +47,7 @@ public class Prey : Agent {
 
 	private void RunAway(){
 		AvoidWalls ();
+		AvoidObstacles ();
 		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
 		velocity += (agentToVertex.normalized * 0.1f);
 		velocity.Normalize ();

@@ -8,7 +8,7 @@ public class Predator : Agent {
 
 
 	void Start () {
-		velocity = new Vector3 (0.0f, 0.0f, 0.06f);
+		velocity = new Vector3 (0.0f, 0.0f, 0.0f);
 		canSeePrey = false;
 		preyTarget = null;
 		SetupVisionLines (Color.red);
@@ -46,6 +46,11 @@ public class Predator : Agent {
 		canSeePrey = false;
 	}
 	private void ChasePrey(){
+		if (preyTarget == null) {
+			canSeePrey = false;
+			return;
+		}
+		AvoidObstacles ();
 		Vector3 agentToVertex = transform.position - preyTarget.transform.position ;
 		velocity -= agentToVertex.normalized * 0.5f;
 		velocity.Normalize ();
