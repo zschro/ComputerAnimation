@@ -30,12 +30,11 @@ public class Prey : Agent {
 	private void RunAway(){
 		velocity.Normalize ();
 		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
-		velocity += agentToVertex.normalized * 0.5f;
-		AvoidWalls ();
-		AvoidObstacles ();
+		velocity += (agentToVertex.normalized * 0.3f);
 		sprintCount--;
 		if (sprintCount < 1) {
 			this.state = State.Wander;
+			Debug.Log ("Prey Changed State - Wander");
 			var mat = this.GetComponent<MeshRenderer> ().material;
 			mat.color = Color.blue;
 		}
@@ -49,15 +48,17 @@ public class Prey : Agent {
 			LineRenderer lr = visionLine.GetComponent<LineRenderer>();
 			lr.SetPosition(0, transform.position);
 
-			if (Physics.Raycast(transform.position, rayCast, out hit, 5.0f))
+			if (Physics.Raycast(transform.position, rayCast, out hit, 7.0f))
 			{
 				if(hit.collider != null)
 				{
-					if (hit.collider.tag == "predator") {
+					if (hit.collider.gameObject.tag == "predator") {
 						predatorToAvoid = hit;
 						this.state = State.RunAway;
+						sprintCount = 300;
+						Debug.Log ("Prey Changed State - Run Away");
 						var mat = this.GetComponent<MeshRenderer> ().material;
-						mat.color = Color.cyan;
+						mat.color = Color.yellow;
 					}
 				}
 				lr.SetPosition(1, hit.point);
@@ -68,7 +69,7 @@ public class Prey : Agent {
 			{
 				lr.startColor = Color.blue;
 				lr.endColor = Color.blue;
-				lr.SetPosition(1, transform.position + rayCast.normalized * 5.0f);
+				lr.SetPosition(1, transform.position + rayCast.normalized * 7.0f);
 			}
 			i++;
 		}

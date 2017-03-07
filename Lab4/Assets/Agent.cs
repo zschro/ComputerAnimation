@@ -19,16 +19,16 @@ public class Agent : MonoBehaviour {
 
 	protected virtual void Wander(){
 		velocity += new Vector3 (Random.Range (-0.2f, 0.2f), 0.0f, Random.Range (-0.2f, 0.2f));
+	}
+
+	protected virtual void Move(){
 		AvoidWalls ();
 		AvoidObstacles ();
-		velocity = velocity.normalized;
-	}
-	protected virtual void Move(){
 		velocity.Normalize ();
 		if (this.state == State.RunAway) {
-			transform.Translate (velocity * 0.5f);
+			transform.Translate (velocity * 0.18f);
 		} else {
-			transform.Translate (velocity * 0.1f);
+			transform.Translate (velocity * 0.15f);
 		}
 	}
 
@@ -65,7 +65,7 @@ public class Agent : MonoBehaviour {
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
 		float wallDistance = 22.0f;
-		float wallAvoidanceFactor = 0.7f;
+		float wallAvoidanceFactor = 0.8f;
 		if (updatePos.x > wallDistance) {
 			velocity.x -= wallAvoidanceFactor;
 		}
