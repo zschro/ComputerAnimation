@@ -22,6 +22,7 @@ public class Predator : Agent {
 		} else {
 			ChasePrey();
 		}
+		Move ();
 	}
 	private void FindPrey(){
 		Vector3 orientation = velocity;
@@ -30,12 +31,12 @@ public class Predator : Agent {
 			if (agentToVertex.magnitude < 5.0f) {
 				//prey is within range
 				agentToVertex.Normalize ();
-				Debug.Log ($"check: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
+				//Debug.Log ($"check: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
 				if (Mathf.Abs(Vector3.Dot (agentToVertex, orientation)) > 0.9f) {
 					preyTarget = prey;
 //					prey.SendMessage ("Stop");
 //					Stop ();
-					Debug.Log ($"hit: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
+					//Debug.Log ($"hit: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
 					var mat = prey.GetComponent<MeshRenderer> ().material;
 					mat.color = Color.magenta;
 					canSeePrey = true;
@@ -55,9 +56,9 @@ public class Predator : Agent {
 		velocity -= agentToVertex.normalized * 0.5f;
 		velocity.Normalize ();
 		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
-		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
-		lr.SetPosition(0, transform.position);
-		lr.SetPosition(1, transform.position + (velocity * 5.0f));
+//		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
+//		lr.SetPosition(0, transform.position);
+//		lr.SetPosition(1, transform.position + (velocity * 5.0f));
 		transform.Translate (velocity * 0.15f);
 		if (agentToVertex.magnitude < 1.0f) {
 			preyTarget.tag = "dead";

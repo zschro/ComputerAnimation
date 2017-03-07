@@ -6,22 +6,24 @@ public class Agent : MonoBehaviour {
 	public Vector3 velocity;
 	public List<GameObject> visionLines;
 	public Shader lineShader;
-	public GameObject directionLine;
-	private bool stop = false;
-
     private GameObject obstacle;
+	private int numberOfVisionLines = 6;
+	protected State state;
+	protected enum State{
+		RunAway,
+		Wander,
+		AvoidWalls,
+		AvoidObstacles,
+		ChasePrey
+	}
 
 	protected virtual void Wander(){
-		if (stop)
-			return;
+		velocity += new Vector3 (Random.Range (-0.2f, 0.2f), 0.0f, Random.Range (-0.2f, 0.2f));
 		AvoidWalls ();
 		AvoidObstacles ();
-		velocity += new Vector3 (Random.Range (-0.2f, 0.2f), 0.0f, Random.Range (-0.2f, 0.2f));
+	}
+	protected virtual void Move(){
 		velocity.Normalize ();
-		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
-		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
-		lr.SetPosition(0, transform.position);
-		lr.SetPosition(1, transform.position + (velocity * 5.0f));
 		transform.Translate (velocity * 0.08f);
 	}
 
@@ -68,19 +70,19 @@ public class Agent : MonoBehaviour {
 	}
 		
 	protected void SetupVisionLines(Color color){
-		directionLine = new GameObject();
-		directionLine.transform.parent = transform;
-		directionLine.AddComponent<LineRenderer>();
-		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
-		//lr.material = new Material(lineShader);
-		lr.material = new Material(Shader.Find("Particles/Alpha Blended Premultiply"));
-		color.a = 0.5f;
-		lr.startColor = color;
-		lr.endColor = color;
-		lr.startWidth = 0.1f;
-		lr.endWidth = 5.0f;
-	}
-	protected void Stop(){
-		stop = true;
+		for (int i = 0; i < numberOfVisionLines; i++) {
+			var directionLine = new GameObject();
+			directionLine.transform.parent = transform;
+			directionLine.AddComponent<LineRenderer>();
+			LineRenderer lr = directionLine.GetComponent<LineRenderer>();
+			lr.material = new Material(Shader.Find("Particles/Alpha Blended Premultiply"));
+			color.a = 0.80f;
+			lr.startColor = color;
+			lr.endColor = color;
+			lr.startWidth = 0.1f;
+			lr.endWidth = 0.30f;
+			visionLines.Add (directionLine);
+		}
+
 	}
 }

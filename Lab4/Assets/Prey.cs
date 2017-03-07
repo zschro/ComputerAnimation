@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Prey : Agent {
-	
-	private bool canSeePredator;
-	private GameObject predatorToAvoid;
+	private RaycastHit predatorToAvoid;
 	private int sprintCount = 0;
+
 	// Use this for initialization
 	void Start () {
 		velocity = new Vector3 (0.0f, 0.0f, 0.0f);
-		canSeePredator = false;
+		state = State.Wander;
 		SetupVisionLines (Color.blue);
 		var mat = this.GetComponent<MeshRenderer> ().material;
 		mat.color = Color.blue;
@@ -18,36 +17,17 @@ public class Prey : Agent {
 	
 	// Update is called once per frame
 	void Update () {
-		
-        /*
-		if (!canSeePredator) {
-			Wander ();
-			FindPredator();
-		} else {
-			RunAway();
-		}
-        */
         RaycastVision();
-
-	}
-	private void FindPredator(){
-		Vector3 orientation = velocity;
-		foreach (var predator in GameObject.FindGameObjectsWithTag ("predator")) {
-			Vector3 agentToVertex = predator.transform.position - transform.position;
-			if (agentToVertex.magnitude < 6.0f) {
-				//prey is within range
-				agentToVertex.Normalize ();
-				//Debug.Log ($"check: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
-				if (Mathf.Abs(Vector3.Dot (agentToVertex, orientation)) > 0.8f) {
-					predatorToAvoid = predator;
-					Debug.Log ($"prey saw predator: {Vector3.Dot (agentToVertex, orientation)}, {predator.name}");
-					canSeePredator = true;
-					sprintCount += 100;
-					return;
-				}
-			}
+		if (this.state == State.AvoidWalls) {
+			AvoidWalls ();
+		} else if (this.state == State.AvoidObstacles) {
+			AvoidObstacles ();
+		} else if (this.state == State.RunAway) {
+			RunAway ();
+		} else {
+			Wander ();
 		}
-		canSeePredator = false;
+		Move ();
 	}
 
 	private void RunAway(){
@@ -56,50 +36,52 @@ public class Prey : Agent {
 		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
 		velocity += (agentToVertex.normalized * 0.1f);
 		velocity.Normalize ();
-		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
-		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
-		lr.SetPosition(0, transform.position);
-		lr.SetPosition(1, transform.position + (velocity * 5.0f));
 		transform.Translate (velocity * 0.2f);
 		sprintCount--;
 		if (sprintCount < 1) {
-			canSeePredator = false;
+			this.state = State.Wander;
 			var mat = this.GetComponent<MeshRenderer> ().material;
 			mat.color = Color.blue;
 		}
 	}
     private void RaycastVision()
     {
-        Vector3 fwd = transform.TransformDirection(Vector3.forward);
-        RaycastHit hit;
-        
-        if (Physics.Raycast(transform.position, fwd, out hit, 1))
-        {
-            if(hit.collider != null)
-            {
-                //hit.collider.enabled = false;
-                //Debug.Log("something hit: " + hit.collider);
-                if(hit.collider.tag == "wall")
-                {
-                    AvoidWalls();
-                }
-                else if(hit.collider.tag == "obstacle")
-                {
-                    AvoidObstacles();
-                }
-                else if(hit.collider.tag == "predator")
-                {
-                    RunAway();
-                }
-              
-            }
+		int i = -3;
+		foreach (var visionLine in visionLines) {
+			Vector3 rayCast = Quaternion.Euler(0, 0, i*10) * velocity;
+			RaycastHit hit;
+			LineRenderer lr = visionLine.GetComponent<LineRenderer>();
+			lr.SetPosition(0, transform.position);
 
-            //print("There is something in front of the prey!");        
-        }
-        else
-        {
-            Wander();
-        }
+			if (Physics.Raycast(transform.position, rayCast, out hit, 5.0f))
+			{
+				if(hit.collider != null)
+				{
+					Debug.Log("something hit: " + hit.collider);
+					if (hit.collider.tag == "wall") {
+						this.state = State.AvoidWalls;
+					} else if (hit.collider.tag == "obstacle") {
+						this.state = State.AvoidObstacles;
+					} else if (hit.collider.tag == "predator") {
+						predatorToAvoid = hit;
+						this.state = State.RunAway;
+					} else {
+						this.state = State.Wander;
+					}
+				}
+				lr.SetPosition(1, hit.point);
+				lr.startColor = Color.green;
+				lr.endColor = Color.green;   
+			}
+			else
+			{
+				lr.startColor = Color.blue;
+				lr.endColor = Color.blue;
+				lr.SetPosition(1, transform.position + rayCast.normalized * 5.0f);
+				Wander();
+			}
+			i++;
+		}
     }
 
 }
