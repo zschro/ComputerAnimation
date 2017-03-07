@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Prey : Agent {
-	private RaycastHit predatorToAvoid;
+	private GameObject predatorToAvoid;
 	private RaycastHit obstacleToAvoid;
 	private int sprintCount = 0;
 
@@ -53,12 +53,12 @@ public class Prey : Agent {
 				if(hit.collider != null)
 				{
 					if (hit.collider.gameObject.tag == "predator") {
-						predatorToAvoid = hit;
+						predatorToAvoid = hit.collider.gameObject;
 						this.state = State.RunAway;
 						sprintCount = 300;
 						Debug.Log ("Prey Changed State - Run Away");
 						var mat = this.GetComponent<MeshRenderer> ().material;
-						mat.color = Color.yellow;
+						mat.color = Color.cyan;
 					}
 				}
 				lr.SetPosition(1, hit.point);

@@ -63,6 +63,8 @@ public class Predator : Agent {
 		if (preyTarget == null) {
 			this.state = State.Wander;
 			Debug.Log ("Predator Changed State - Wander");
+			var mat = this.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.red;
 			return;
 		}
 		Vector3 agentToVertex = transform.position - preyTarget.transform.position ;
@@ -75,11 +77,15 @@ public class Predator : Agent {
 			preyTarget = null;
 			this.state = State.Wander;
 			Debug.Log ("Predator Changed State - Wander");
+			var mat = this.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.red;
 		}
 		if (agentToVertex.magnitude > 6.0f) {
 			preyTarget = null;
 			this.state = State.Wander;
 			Debug.Log ("Predator Changed State - Wander");
+			var mat = this.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.red;
 		}
 	}
 }
