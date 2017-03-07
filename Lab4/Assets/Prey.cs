@@ -19,12 +19,15 @@ public class Prey : Agent {
 	// Update is called once per frame
 	void Update () {
 		
+        /*
 		if (!canSeePredator) {
 			Wander ();
 			FindPredator();
 		} else {
 			RunAway();
 		}
+        */
+        RaycastVision();
 
 	}
 	private void FindPredator(){
@@ -65,4 +68,38 @@ public class Prey : Agent {
 			mat.color = Color.blue;
 		}
 	}
+    private void RaycastVision()
+    {
+        Vector3 fwd = transform.TransformDirection(Vector3.forward);
+        RaycastHit hit;
+        
+        if (Physics.Raycast(transform.position, fwd, out hit, 1))
+        {
+            if(hit.collider != null)
+            {
+                //hit.collider.enabled = false;
+                //Debug.Log("something hit: " + hit.collider);
+                if(hit.collider.tag == "wall")
+                {
+                    AvoidWalls();
+                }
+                else if(hit.collider.tag == "obstacle")
+                {
+                    AvoidObstacles();
+                }
+                else if(hit.collider.tag == "predator")
+                {
+                    RunAway();
+                }
+              
+            }
+
+            //print("There is something in front of the prey!");        
+        }
+        else
+        {
+            Wander();
+        }
+    }
+
 }
