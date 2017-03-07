@@ -5,6 +5,7 @@ using UnityEngine;
 public class Predator : Agent {
 	private bool canSeePrey;
 	private GameObject preyTarget;
+	private RaycastHit obstacleToAvoid;
 
 
 	void Start () {
@@ -15,51 +16,58 @@ public class Predator : Agent {
 	}
 
 	void Update () {		
-		//Find Prey
-		if (!canSeePrey) {
-			Wander ();
-			FindPrey();
+		RaycastVision ();
+		if (this.state == State.ChasePrey) {
+			ChasePrey ();
 		} else {
-			ChasePrey();
+			Wander ();
 		}
 		Move ();
 	}
-	private void FindPrey(){
-		Vector3 orientation = velocity;
-		foreach (var prey in GameObject.FindGameObjectsWithTag ("prey")) {
-			Vector3 agentToVertex = prey.transform.position - transform.position;
-			if (agentToVertex.magnitude < 5.0f) {
-				//prey is within range
-				agentToVertex.Normalize ();
-				//Debug.Log ($"check: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
-				if (Mathf.Abs(Vector3.Dot (agentToVertex, orientation)) > 0.9f) {
-					preyTarget = prey;
-//					prey.SendMessage ("Stop");
-//					Stop ();
-					//Debug.Log ($"hit: {Vector3.Dot (agentToVertex, orientation)}, {prey.name}");
-					var mat = prey.GetComponent<MeshRenderer> ().material;
-					mat.color = Color.magenta;
-					canSeePrey = true;
-					return;
+
+	private void RaycastVision()
+	{
+		int i = -3;
+		foreach (var visionLine in visionLines) {
+			Vector3 rayCast = Quaternion.Euler(0, i*10, 0) * velocity;
+			RaycastHit hit;
+			LineRenderer lr = visionLine.GetComponent<LineRenderer>();
+			lr.SetPosition(0, transform.position);
+
+			if (Physics.Raycast(transform.position, rayCast, out hit, 5.0f))
+			{
+				if(hit.collider != null)
+				{
+					if (hit.collider.tag == "prey") {
+						preyTarget = hit.collider.gameObject;
+						this.state = State.ChasePrey;
+						var mat = this.GetComponent<MeshRenderer> ().material;
+						mat.color = Color.magenta;
+					}
 				}
+				lr.SetPosition(1, hit.point);
+				lr.startColor = Color.green;
+				lr.endColor = Color.green;   
 			}
+			else
+			{
+				lr.startColor = Color.red;
+				lr.endColor = Color.red;
+				lr.SetPosition(1, transform.position + rayCast.normalized * 5.0f);
+			}
+			i++;
 		}
-		canSeePrey = false;
 	}
+		
 	private void ChasePrey(){
 		if (preyTarget == null) {
 			canSeePrey = false;
 			return;
 		}
-		AvoidObstacles ();
 		Vector3 agentToVertex = transform.position - preyTarget.transform.position ;
-		velocity -= agentToVertex.normalized * 0.5f;
-		velocity.Normalize ();
-		//transform.Rotate (new Vector3 (0.0f, Random.Range (-2.0f, 2.0f)));
-//		LineRenderer lr = directionLine.GetComponent<LineRenderer>();
-//		lr.SetPosition(0, transform.position);
-//		lr.SetPosition(1, transform.position + (velocity * 5.0f));
-		transform.Translate (velocity * 0.15f);
+		velocity -= agentToVertex.normalized * 1.5f;
+		AvoidWalls ();
+		AvoidObstacles ();
 		if (agentToVertex.magnitude < 1.0f) {
 			preyTarget.tag = "dead";
 			Destroy (preyTarget);
@@ -68,7 +76,7 @@ public class Predator : Agent {
 		}
 		if (agentToVertex.magnitude > 6.0f) {
 			preyTarget = null;
-			canSeePrey = false;
+			this.state = State.Wander;
 		}
 	}
 }

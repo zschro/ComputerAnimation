@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Prey : Agent {
 	private RaycastHit predatorToAvoid;
+	private RaycastHit obstacleToAvoid;
 	private int sprintCount = 0;
 
 	// Use this for initialization
@@ -18,11 +19,7 @@ public class Prey : Agent {
 	// Update is called once per frame
 	void Update () {
         RaycastVision();
-		if (this.state == State.AvoidWalls) {
-			AvoidWalls ();
-		} else if (this.state == State.AvoidObstacles) {
-			AvoidObstacles ();
-		} else if (this.state == State.RunAway) {
+		if (this.state == State.RunAway) {
 			RunAway ();
 		} else {
 			Wander ();
@@ -31,12 +28,11 @@ public class Prey : Agent {
 	}
 
 	private void RunAway(){
+		velocity.Normalize ();
+		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
+		velocity += agentToVertex.normalized * 0.5f;
 		AvoidWalls ();
 		AvoidObstacles ();
-		Vector3 agentToVertex = transform.position - predatorToAvoid.transform.position ;
-		velocity += (agentToVertex.normalized * 0.1f);
-		velocity.Normalize ();
-		transform.Translate (velocity * 0.2f);
 		sprintCount--;
 		if (sprintCount < 1) {
 			this.state = State.Wander;
@@ -48,7 +44,7 @@ public class Prey : Agent {
     {
 		int i = -3;
 		foreach (var visionLine in visionLines) {
-			Vector3 rayCast = Quaternion.Euler(0, 0, i*10) * velocity;
+			Vector3 rayCast = Quaternion.Euler(0, i*10, 0) * velocity;
 			RaycastHit hit;
 			LineRenderer lr = visionLine.GetComponent<LineRenderer>();
 			lr.SetPosition(0, transform.position);
@@ -57,16 +53,11 @@ public class Prey : Agent {
 			{
 				if(hit.collider != null)
 				{
-					Debug.Log("something hit: " + hit.collider);
-					if (hit.collider.tag == "wall") {
-						this.state = State.AvoidWalls;
-					} else if (hit.collider.tag == "obstacle") {
-						this.state = State.AvoidObstacles;
-					} else if (hit.collider.tag == "predator") {
+					if (hit.collider.tag == "predator") {
 						predatorToAvoid = hit;
 						this.state = State.RunAway;
-					} else {
-						this.state = State.Wander;
+						var mat = this.GetComponent<MeshRenderer> ().material;
+						mat.color = Color.cyan;
 					}
 				}
 				lr.SetPosition(1, hit.point);
@@ -78,7 +69,6 @@ public class Prey : Agent {
 				lr.startColor = Color.blue;
 				lr.endColor = Color.blue;
 				lr.SetPosition(1, transform.position + rayCast.normalized * 5.0f);
-				Wander();
 			}
 			i++;
 		}

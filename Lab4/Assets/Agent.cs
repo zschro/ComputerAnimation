@@ -21,10 +21,21 @@ public class Agent : MonoBehaviour {
 		velocity += new Vector3 (Random.Range (-0.2f, 0.2f), 0.0f, Random.Range (-0.2f, 0.2f));
 		AvoidWalls ();
 		AvoidObstacles ();
+		velocity = velocity.normalized;
 	}
 	protected virtual void Move(){
 		velocity.Normalize ();
-		transform.Translate (velocity * 0.08f);
+		if (this.state == State.RunAway) {
+			transform.Translate (velocity * 0.5f);
+		} else {
+			transform.Translate (velocity * 0.1f);
+		}
+	}
+
+	protected virtual void AvoidObstacle(RaycastHit obstacle){
+		var forceAway = transform.position - obstacle.transform.position;
+		velocity += forceAway;
+		velocity.Normalize ();
 	}
 
 	protected virtual void AvoidObstacles(){
@@ -53,8 +64,8 @@ public class Agent : MonoBehaviour {
 
 	protected virtual void AvoidWalls(){
 		Vector3 updatePos = transform.position + velocity;
-		float wallDistance = 24.5f;
-		float wallAvoidanceFactor = 0.6f;
+		float wallDistance = 22.0f;
+		float wallAvoidanceFactor = 0.7f;
 		if (updatePos.x > wallDistance) {
 			velocity.x -= wallAvoidanceFactor;
 		}
