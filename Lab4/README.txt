@@ -6,5 +6,7 @@ The TagManager.asset file must be placed in the ProjectSettings Folder for the p
 
 Predators, represented by the red spheres, chase Prey, represented by the blue spheres, who will try to run away when spotted
 Both predators and prey use Field of vision to test if they see anything
+Both change colors when entering Chase mode for predators or RunAway mode for Prey
 Both avoid the fixed obstacles and walls in the arena they start in
-Both have their field of vision represented by a colored cone coming out of the sphere while in Game mode
+Both can not see through the fixed obstacle
+Both have their field of vision represented by colored rays coming out of the sphere while in Game mode
