@@ -14,22 +14,43 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	const int MaxY = 5;
 	const int MaxZ = 5;
 	
-	double time = 0;
-	const double DT = 0.01;
+	float time = 0;
+	const float DT = 0.005f;
+	private Matrix4x4 catmulRom;
 	
 	/* Returns a point on a cubic Catmull-Rom/Blended Parabolas curve
 	 * u is a scalar value from 0 to 1
 	 * segment_number indicates which 4 points to use for interpolation
 	 */
-	Vector3 ComputePointOnCatmullRomCurve(double u, int segmentNumber)
+	Vector3 ComputePointOnCatmullRomCurve(float u, int segmentNumber)
 	{
 		Vector3 point = new Vector3();
+		int p0 = segmentNumber;
+
+		int p_minus_2 = (segmentNumber + NumberOfPoints - 2) % (NumberOfPoints);
+		int p_minus_1 = (segmentNumber + NumberOfPoints - 1) % (NumberOfPoints);
+		int p_1 = (segmentNumber + 1) % (NumberOfPoints);
+
+
+		Debug.Log ($"p0: {p0}, p_1: {p_1}, p_-2: {p_minus_2}");
+
+		Vector4 uVector = new Vector4 (u * u * u, u * u, u, 1);
+		var xVector = new Vector4(controlPoints[p_minus_2].x,controlPoints[p_minus_1].x,
+			controlPoints[p0].x,controlPoints[p_1].x);
+		var yVector = new Vector4(controlPoints[p_minus_2].y,controlPoints[p_minus_1].y,
+			controlPoints[p0].y,controlPoints[p_1].y);
+		var zVector = new Vector4(controlPoints[p_minus_2].z,controlPoints[p_minus_1].z,
+			controlPoints[p0].z,controlPoints[p_1].z);
 		
-		// TODO - compute and return a point as a Vector3		
-		// Hint: Points on segment number 0 start at controlPoints[0] and end at controlPoints[1]
-		//		 Points on segment number 1 start at controlPoints[1] and end at controlPoints[2]
-		//		 etc...
-		
+		var xResult = catmulRom * xVector;
+		point.x = Vector4.Dot(uVector, xResult);
+
+		var yResult = catmulRom * yVector;
+		point.y = Vector4.Dot(uVector, yResult);
+
+		var zResult = catmulRom * zVector;
+		point.z = Vector4.Dot(uVector, zResult);
+
 		return point;
 	}
 	
@@ -66,6 +87,10 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		*/
 		
 		GenerateControlPointGeometry();
+		catmulRom.SetRow (0, new Vector4 (-0.5f, 1.5f, -1.5f, 0.5f));
+		catmulRom.SetRow (1, new Vector4 (1.0f, -2.5f, 2.0f, -0.5f));
+		catmulRom.SetRow (2, new Vector4 (-0.5f, 0f, 0.5f, 0f));
+		catmulRom.SetRow (3, new Vector4 (0f, 1.0f, 0f, 0f));
 	}
 	
 	// Update is called once per frame
@@ -74,8 +99,15 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		time += DT;
 			
 		// TODO - use time to determine values for u and segment_number in this function call
+		int segmentNumber = Mathf.RoundToInt(time - .5f);
+		if (segmentNumber > (NumberOfPoints - 1)) {
+			segmentNumber--;	
+			time -= NumberOfPoints;
+		}
+		float u = (time - segmentNumber);
+		Debug.Log ($"U: {u}, SegmentNumber: {segmentNumber}, Time: {time}");
 		
-		Vector3 temp = ComputePointOnCatmullRomCurve(0,0);
+		Vector3 temp = ComputePointOnCatmullRomCurve(u,segmentNumber);
 		transform.position = temp;
 	}
 }
