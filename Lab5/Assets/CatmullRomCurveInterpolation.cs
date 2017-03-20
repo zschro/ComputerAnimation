@@ -108,6 +108,8 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		Debug.Log ($"U: {u}, SegmentNumber: {segmentNumber}, Time: {time}");
 		
 		Vector3 temp = ComputePointOnCatmullRomCurve(u,segmentNumber);
+		transform.forward = transform.position - temp;
 		transform.position = temp;
+
 	}
 }
