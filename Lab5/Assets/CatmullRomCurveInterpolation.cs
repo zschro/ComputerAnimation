@@ -75,16 +75,6 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		{
 			controlPoints[i] = new Vector3(Random.Range(MinX,MaxX),Random.Range(MinY,MaxY),Random.Range(MinZ,MaxZ));
 		}
-		/*...or hard code them for testing
-		controlPoints[0] = new Vector3(0,0,0);
-		controlPoints[1] = new Vector3(0,0,0);
-		controlPoints[2] = new Vector3(0,0,0);
-		controlPoints[3] = new Vector3(0,0,0);
-		controlPoints[4] = new Vector3(0,0,0);
-		controlPoints[5] = new Vector3(0,0,0);
-		controlPoints[6] = new Vector3(0,0,0);
-		controlPoints[7] = new Vector3(0,0,0);
-		*/
 		
 		GenerateControlPointGeometry();
 		catmulRom.SetRow (0, new Vector4 (-0.5f, 1.5f, -1.5f, 0.5f));
@@ -108,8 +98,7 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		Debug.Log ($"U: {u}, SegmentNumber: {segmentNumber}, Time: {time}");
 		
 		Vector3 temp = ComputePointOnCatmullRomCurve(u,segmentNumber);
-		transform.forward = transform.position - temp;
+		transform.forward = temp - transform.position;
 		transform.position = temp;
-
 	}
 }
