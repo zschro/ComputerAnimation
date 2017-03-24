@@ -5,7 +5,12 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	
 	const int NumberOfPoints = 8;
 	Vector3[] controlPoints;
-	
+
+    Vector3[] subPoints;
+
+    double[] arclengths = new double[NumberOfPoints];
+    float totalLength;
+
 	const int MinX = -5;
 	const int MinY = -5;
 	const int MinZ = 0;
@@ -68,15 +73,50 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	void Start () {
 
 		controlPoints = new Vector3[NumberOfPoints];
-		
+
 		// set points randomly...
 		controlPoints[0] = new Vector3(0,0,0);
-		for(int i = 1; i < NumberOfPoints; i++)
+
+        
+        for (int i = 1; i < NumberOfPoints; i++)
 		{
 			controlPoints[i] = new Vector3(Random.Range(MinX,MaxX),Random.Range(MinY,MaxY),Random.Range(MinZ,MaxZ));
-		}
-		
-		GenerateControlPointGeometry();
+        }
+
+        float clength = 0;
+        subPoints = new Vector3[NumberOfPoints * 10];
+        Vector3 dpoint;
+        for (int i = 0; i < NumberOfPoints; i++)
+        {
+            for (int j = 0; j < 10; j++)
+            {
+                //next point
+                Vector3 furtherPoint = controlPoints[i] * (.1f * j);
+                subPoints[(i * 10) + j] = furtherPoint;
+                //calculate distance between new point and old point
+                if(i + j == 0)
+                {
+                    dpoint = subPoints[0] - furtherPoint;
+                }
+                else
+                {
+                    dpoint = subPoints[(i * 10) + j - 1] - furtherPoint;
+                }
+                
+                //calculate arclength, add to running total and running total arraylist
+                float preRoot = Mathf.Pow(dpoint.x, 2) + Mathf.Pow(dpoint.y, 2) + Mathf.Pow(dpoint.z, 2);
+                clength += Mathf.Sqrt(preRoot);
+
+                arclengths[i] = clength;
+                //Debug.Log(arclengths[i]);
+
+            }
+        }
+
+        totalLength += clength;
+        Debug.Log(totalLength);
+
+        GenerateControlPointGeometry();
 		catmulRom.SetRow (0, new Vector4 (-0.5f, 1.5f, -1.5f, 0.5f));
 		catmulRom.SetRow (1, new Vector4 (1.0f, -2.5f, 2.0f, -0.5f));
 		catmulRom.SetRow (2, new Vector4 (-0.5f, 0f, 0.5f, 0f));
