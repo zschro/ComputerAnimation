@@ -4,11 +4,13 @@ using System.Collections.Generic;
 
 public class CatmullRomCurveInterpolation : MonoBehaviour {
 	
-	const int NumberOfPoints = 8;
+	const int NumberOfPoints = 3;
 	Vector3[] controlPoints;
     Vector3[] subPoints;
 	List<Vector3> travelPoints;
 	int nextTravelPoint = 0;
+	float maxSpeed = 0.04f;
+	float minSpeed = 0.004f;
 
     double[] arclengths = new double[NumberOfPoints];
     float totalLength;
@@ -102,6 +104,8 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		float subsectionLength = 0;
 
 		Vector3 dpoint;
+		float speed = 0.005f;
+		bool easeOut = false;
 		for (int i = 0; i < NumberOfPoints; i++)
 		{
 			for (int j = 0; j < 10000; j++)
@@ -121,7 +125,13 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 					dpoint = subPoints[(i * 10000) + j - 1] - furtherPoint;
 				}
 				subsectionLength += dpoint.magnitude;
-				if (subsectionLength > .03f) {
+				if (subsectionLength > speed) {
+					if (speed < maxSpeed && !easeOut) {
+						speed += .0002f;
+					}
+					if (i == (NumberOfPoints - 1) && speed > minSpeed && j > 7500) {
+						speed -= .002f;
+					}
 					travelPoints.Add (furtherPoint);
 					subsectionLength = 0.0f;
 				}
