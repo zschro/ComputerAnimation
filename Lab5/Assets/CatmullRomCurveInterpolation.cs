@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class CatmullRomCurveInterpolation : MonoBehaviour {
 	
-	const int NumberOfPoints = 3;
+	const int NumberOfPoints = 10;
 	Vector3[] controlPoints;
     Vector3[] subPoints;
 	List<Vector3> travelPoints;
@@ -152,21 +152,5 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 		transform.forward = temp - transform.position;
 		Debug.Log ($"Speed:{(temp - transform.position).magnitude}");
 		transform.position = temp;
-
-//		time += DT;
-//			
-//		// TODO - use time to determine values for u and segment_number in this function call
-//		int segmentNumber = Mathf.RoundToInt(time - .5f);
-//		if (segmentNumber > (NumberOfPoints - 1)) {
-//			segmentNumber--;	
-//			time -= NumberOfPoints;
-//		}
-//		float u = (time - segmentNumber);
-//
-//		
-//		Vector3 temp = ComputePointOnCatmullRomCurve(u,segmentNumber);
-//		transform.forward = temp - transform.position;
-
-//		transform.position = temp;
 	}
 }
