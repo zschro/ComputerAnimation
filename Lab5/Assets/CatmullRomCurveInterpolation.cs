@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class CatmullRomCurveInterpolation : MonoBehaviour {
 	
-	const int NumberOfPoints = 3;
+	const int NumberOfPoints = 10;
 	Vector3[] controlPoints;
 	List<Vector3> travelPoints;
 	int nextTravelPoint = 0;
@@ -144,13 +144,13 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 				travelPoints.Add (subPoints[i]);
 				lastPoint = i;
 
-				if (i < numberOfSubPoints/3) {
+				if (i < numberOfSubPoints/2) {
 					//speed up
 					speed += acceleration;
 				}
-				if (subPoints.Length - i < numberOfSubPoints/3) {
+				if (subPoints.Length - i < numberOfSubPoints/2) {
 					//slow down
-					speed -= acceleration/2;
+					speed -= acceleration/3;
 				}
 
 
