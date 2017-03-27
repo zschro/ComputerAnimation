@@ -12,7 +12,7 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	float minSpeed = 0.001f;
 	float acceleration = 0.001f;
 
-	int numberOfSubPoints = 2000;
+	int numberOfSubPoints = 1000;
 	Vector3[] subPoints;
 	double[] arclengths;
 

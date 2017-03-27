@@ -5,3 +5,5 @@ The object moves according to a path defined by a Catmull-Rom spline, and loops 
 The object moves with a constant speed along curves given by arc length reparameterization.
 The speed of the object increases during the start of the animation and decreases towards the end.
 The object faces the direction it is moving.
+
+Note: The scene precomputes much of the object movement, and so testing the package may take some time to load
