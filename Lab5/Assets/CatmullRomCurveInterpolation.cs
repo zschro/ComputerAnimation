@@ -4,16 +4,17 @@ using System.Collections.Generic;
 
 public class CatmullRomCurveInterpolation : MonoBehaviour {
 	
-	const int NumberOfPoints = 10;
+	const int NumberOfPoints = 3;
 	Vector3[] controlPoints;
-    Vector3[] subPoints;
 	List<Vector3> travelPoints;
 	int nextTravelPoint = 0;
 	float maxSpeed = 0.04f;
-	float minSpeed = 0.004f;
+	float minSpeed = 0.001f;
+	float acceleration = 0.001f;
 
-    double[] arclengths = new double[NumberOfPoints];
-    float totalLength;
+	int numberOfSubPoints = 2000;
+	Vector3[] subPoints;
+	double[] arclengths;
 
 	const int MinX = -5;
 	const int MinY = -5;
@@ -22,9 +23,7 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	const int MaxX = 5;
 	const int MaxY = 5;
 	const int MaxZ = 5;
-	
-	float time = 0;
-	const float DT = 0.005f;
+
 	private Matrix4x4 catmulRom;
 	
 	/* Returns a point on a cubic Catmull-Rom/Blended Parabolas curve
@@ -77,11 +76,12 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 	void Start () {
 
 		controlPoints = new Vector3[NumberOfPoints];
+		arclengths = new double[NumberOfPoints * numberOfSubPoints];
+		subPoints = new Vector3[NumberOfPoints * numberOfSubPoints];
+
 
 		// set points randomly...
 		controlPoints[0] = new Vector3(0,0,0);
-
-        
         for (int i = 1; i < NumberOfPoints; i++)
 		{
 			controlPoints[i] = new Vector3(Random.Range(MinX,MaxX),Random.Range(MinY,MaxY),Random.Range(MinZ,MaxZ));
@@ -89,60 +89,73 @@ public class CatmullRomCurveInterpolation : MonoBehaviour {
 
         GenerateControlPointGeometry();
 
+		//Hard Coded tau = .5 matrix
 		catmulRom.SetRow (0, new Vector4 (-0.5f, 1.5f, -1.5f, 0.5f));
 		catmulRom.SetRow (1, new Vector4 (1.0f, -2.5f, 2.0f, -0.5f));
 		catmulRom.SetRow (2, new Vector4 (-0.5f, 0f, 0.5f, 0f));
 		catmulRom.SetRow (3, new Vector4 (0f, 1.0f, 0f, 0f));
+
 		ReparameterizeArcLength ();
 	}
 
 	private void ReparameterizeArcLength(){
-		float clength = 0;
-		subPoints = new Vector3[NumberOfPoints * 10000];
-		travelPoints = new List<Vector3>();
-		travelPoints.Add(ComputePointOnCatmullRomCurve(0,0));
-		float subsectionLength = 0;
+		float totalLength = 0;
 
+		double subsectionLength = 0;
+		float increment = 1.0f / (float)numberOfSubPoints;
 		Vector3 dpoint;
-		float speed = 0.005f;
-		bool easeOut = false;
+
 		for (int i = 0; i < NumberOfPoints; i++)
 		{
-			for (int j = 0; j < 10000; j++)
+			for (int j = 0; j < numberOfSubPoints; j++)
 			{
 				//next point
 				//Vector3 furtherPoint = controlPoints[i] * (.1f * j);
-				Vector3 furtherPoint = ComputePointOnCatmullRomCurve(j * 0.0001f,i);
-				subPoints[(i * 10000) + j] = furtherPoint;
+				Vector3 furtherPoint = ComputePointOnCatmullRomCurve(j * increment,i);
+				subPoints[(i * numberOfSubPoints) + j] = furtherPoint;
 				//calculate distance between new point and old point
 				if(i + j == 0)
 				{
 					dpoint = new Vector3 ();
-					//dpoint = subPoints[0] - furtherPoint;
 				}
 				else
 				{
-					dpoint = subPoints[(i * 10000) + j - 1] - furtherPoint;
-				}
-				subsectionLength += dpoint.magnitude;
-				if (subsectionLength > speed) {
-					if (speed < maxSpeed && !easeOut) {
-						speed += .0002f;
-					}
-					if (i == (NumberOfPoints - 1) && speed > minSpeed && j > 7500) {
-						speed -= .002f;
-					}
-					travelPoints.Add (furtherPoint);
-					subsectionLength = 0.0f;
+					dpoint = subPoints[(i * numberOfSubPoints) + j - 1] - furtherPoint;
 				}
 				//calculate arclength, add to running total and running total arraylist
-				clength += dpoint.magnitude;
-				arclengths[i] = clength;
+				totalLength += dpoint.magnitude;
+				arclengths[(i * numberOfSubPoints) + j] = totalLength;
 			}
 		}
-
-		totalLength += clength;
 		Debug.Log(totalLength);
+
+		//initialize points that will be used as actual movement points
+		travelPoints = new List<Vector3>();
+		travelPoints.Add(ComputePointOnCatmullRomCurve(0,0));
+		int lastPoint = 0;
+		float speed = 0.0f;
+		int numberOfSpeedUpPoints = 0;
+		Debug.Log ($"subPoint:{subPoints.Length}");
+		for (int i = 1; i < subPoints.Length; i++) {
+			subsectionLength = arclengths [i] - arclengths [lastPoint];
+				
+			Debug.Log ($"sectionLength:{subsectionLength}");
+			if (subsectionLength > speed) {
+				travelPoints.Add (subPoints[i]);
+				lastPoint = i;
+
+				if (i < numberOfSubPoints/3) {
+					//speed up
+					speed += acceleration;
+				}
+				if (subPoints.Length - i < numberOfSubPoints/3) {
+					//slow down
+					speed -= acceleration/2;
+				}
+
+
+			}
+		}
 	}
 
 	// Update is called once per frame
