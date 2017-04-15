@@ -7,6 +7,7 @@ public class Kinematics : MonoBehaviour {
 	float arm1Length = 6.0f;
 	float arm2Length = 6.0f;
 	float grabberLength = 0.75f;
+	Vector3 dropOffSpot = new Vector3 (-8.0f, 2.0f, 8.0f);
 	GameObject[] balls;
 	int currentBall = 0;
 
@@ -27,6 +28,10 @@ public class Kinematics : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		balls = this.GetComponents<BallGenerator>()[0].Balls;
+		balls [0].transform.position = new Vector3(8.0f,1.0f,8.0f);
+		var mat = balls [0].GetComponent<MeshRenderer> ().material;
+		mat.color = Color.green;
+
 		this.state = State.PickUp;
 
 		this.arm1 = GameObject.Find ("crane_arm_1");
@@ -41,8 +46,19 @@ public class Kinematics : MonoBehaviour {
 
 		if (state == State.PickUp) {
 			MoveEndEffectorTo (balls [currentBall].transform.position);
+			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.1f)
+				state = State.Drop;
+
 		} else if (state == State.Drop) {
-			MoveEndEffectorTo (new Vector3(-8.0f,2.0f,8.0f));//drop off position above walled in area
+			MoveEndEffectorTo (dropOffSpot);
+			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.1f) {
+				state = State.PickUp;
+				currentBall++;
+			}
+			if (currentBall >= balls.Length)
+				state = State.Rest;
+		} else if (state == State.Rest) {
+			//do nothing
 		}
 
 
@@ -51,65 +67,78 @@ public class Kinematics : MonoBehaviour {
 	void MoveEndEffectorTo(Vector3 goalPosition){
 
 		RotateBase (goalPosition);
-		//RotateArm1 (goalPosition);
 		RotateArm2 (goalPosition);
+		RotateArm1 (goalPosition);
 		RotateGrabber (goalPosition);
-		//LogLinkRotations ();
+		LogLinkRotations ();
 
 	}
 
 	private void RotateBase (Vector3 goal){
 		var rootToGoal = goal - this.transform.position;
-		var rootToEnd = endEffector.transform.position - this.transform.position;
-		rootToEnd.y = rootToGoal.y = 0;
-		Debug.Log ($"RootToGoal: {rootToGoal}");
-		Debug.Log ($"RootToEnd: {rootToEnd}");
-		var dot = Vector3.Dot (rootToGoal, rootToEnd);
-		var angle = Mathf.Acos(dot* Mathf.Deg2Rad);
-		Debug.Log ($"Dot: {dot}");
-		Debug.Log ($"Angle: {angle}");
-		if(angle > .001f)
-			this.transform.Rotate (new Vector3 (0f,angle , 0f));
+		this.transform.forward = rootToGoal.normalized;
 	}
 
 	private void RotateArm1 (Vector3 goal){
 		var rootToGoal = goal - arm1.transform.position;
 		var rootToEnd = endEffector.transform.position - arm1.transform.position;
-		rootToEnd.x = rootToGoal.x = 0;
-		Debug.Log ($"RootToGoal: {rootToGoal}");
-		Debug.Log ($"RootToEnd: {rootToEnd}");
-		var dot = Vector3.Dot (rootToGoal, rootToEnd);
-		var angle = Mathf.Acos(dot* Mathf.Deg2Rad);
-		Debug.Log ($"Dot: {dot}");
-		Debug.Log ($"Angle: {angle}");
-		if(angle > .001f)
-			arm1.transform.Rotate (new Vector3 (angle, 0f, 0f));
+		var dot = Vector3.Dot (rootToGoal.normalized, rootToEnd.normalized);
+		var angle = Mathf.Acos(dot* Mathf.Deg2Rad)*  Mathf.Rad2Deg;
+		Debug.Log ($"Arm1 Angle: {angle}");
+
+		arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+
+//		var baseToGoal = goal - this.transform.position;
+//		baseToGoal.y = 0;
+//		var distanceToGoal = baseToGoal.magnitude;
+//
+//		Vector2 goal2 = new Vector2(distanceToGoal,0.5f);
+//		var root = new Vector2 (arm1.transform.position.z, arm1.transform.position.y);
+//		var endEffector2 = new Vector2 (endEffector.transform.position.z, endEffector.transform.position.y);
+//
+//		var rootToGoal = goal2 - root;
+//		var rootToEnd = endEffector2 - root;
+//
+//		var dot = Vector3.Dot (rootToGoal, rootToEnd);
+//		Debug.Log (dot);
+//		var angle = Mathf.Acos(dot* Mathf.Deg2Rad) *  Mathf.Rad2Deg;
+//		Debug.Log ($"Arm1 Angle: {angle}");
+//		arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
 	}
 
 	private void RotateArm2 (Vector3 goal){
 		var rootToGoal = goal - arm2.transform.position;
 		var rootToEnd = endEffector.transform.position - arm2.transform.position;
-		rootToEnd.x = rootToGoal.x = 0;
-		Debug.Log ($"RootToGoal: {rootToGoal}");
-		Debug.Log ($"RootToEnd: {rootToEnd}");
-		var dot = Vector3.Dot (rootToGoal, rootToEnd);
-		var angle = Mathf.Acos(dot* Mathf.Deg2Rad);
-		Debug.Log ($"Dot: {dot}");
-		Debug.Log ($"Angle: {angle}");
-		if(angle > .001f)
-			arm2.transform.Rotate (new Vector3 (angle, 0f, 0f));
+		var dot = Vector3.Dot (rootToGoal.normalized, rootToEnd.normalized);
+		var angle = Mathf.Acos(dot* Mathf.Deg2Rad)*  Mathf.Rad2Deg;
+		Debug.Log ($"Arm2 Angle: {angle}");
+		arm2.transform.localEulerAngles = new Vector3 (-angle, 0f, 0f);
+
+//		pe = [xdata(num_of_link+1); ydata(num_of_link+1)];
+//		pc = [xdata(iteration-1); ydata(iteration-1)];
+//
+//		a = (pe - pc)/norm(pe-pc);
+//		b = (pt - pc)/norm(pt-pc);
+//		teta = acosd(dot(a, b));
 	}
 
 	private void RotateGrabber (Vector3 goal){
-		var rootToEnd = endEffector.transform.position - claw.transform.position;
-		claw.transform.Rotate (rootToEnd);
-	}
-
-	private void CoordinateDescent(Vector3 endEffectorPos, Vector3 goalPosition, Transform linkTransform){
-		var rootToGoal = goalPosition - linkTransform.position;
-		var rootToEnd = endEffectorPos - linkTransform.position;
-		var angle = Mathf.Acos(Vector3.Dot (rootToGoal, rootToEnd));
-
+//		var rootToGoal = goal - claw.transform.position;
+//		var rootToEnd = endEffector.transform.position - claw.transform.position;
+//		rootToEnd.x = rootToGoal.x = 0;
+//
+//
+//		var dot = Vector3.Dot (rootToGoal, rootToEnd);
+//		var anglex = Mathf.Acos(dot* Mathf.Deg2Rad);
+//
+//		rootToGoal = goal - claw.transform.position;
+//		rootToEnd = endEffector.transform.position - claw.transform.position;
+//		rootToEnd.y = rootToGoal.y = 0;
+//		var doty = Vector3.Dot (rootToGoal, rootToEnd);
+//		var angley = Mathf.Acos(doty* Mathf.Deg2Rad);
+//
+//		var rot = Quaternion.Euler (new Vector3 (anglex, angley, 0f));
+//		claw.transform.rotation = rot;
 	}
 
 	void LogLinkRotations(){
