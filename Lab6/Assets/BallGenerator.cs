@@ -5,10 +5,10 @@ using UnityEngine;
 public class BallGenerator : MonoBehaviour {
 
     int numberOfCubes = 5;
-    int cubeMinZ = 2;
-    int cubeMaxZ = 14;
-    int cubeMinX = -3;
-    int cubeMaxX = 12;
+    float cubeMinZ = 2;
+	float cubeMaxZ = 14;
+	float cubeMinX = -3;
+	float cubeMaxX = 12;
 
     Vector3[] cubeLocations;
 
@@ -18,7 +18,7 @@ public class BallGenerator : MonoBehaviour {
         cubeLocations = new Vector3[numberOfCubes];
         for (int i = 0; i < numberOfCubes; i++)
         {
-            cubeLocations[i] = new Vector3(Random.Range(cubeMinX, cubeMaxX), 2.5f, Random.Range(cubeMinZ, cubeMaxZ));
+            cubeLocations[i] = new Vector3(Random.Range(cubeMinX, cubeMaxX), 0.5f, Random.Range(cubeMinZ, cubeMaxZ));
         }
         for (int i = 0; i < numberOfCubes; i++)
         {

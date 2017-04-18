@@ -3,22 +3,35 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Kinematics : MonoBehaviour {
-	float craneBaseHeight = 1.5f;
-	float arm1Length = 6.0f;
-	float arm2Length = 6.0f;
-	float grabberLength = 0.75f;
-	Vector3 dropOffSpot = new Vector3 (-8.0f, 2.0f, 8.0f);
+	Vector3 dropOffSpot = new Vector3 (-8.0f, 1.0f, 8.0f);
 	GameObject[] balls;
 	int currentBall = 0;
 
-	float rotationSpeed;
+	float prevAngle;
+	float nextAngle;
+	float dt = 0.1f;
+	float t = 0.0f;
+
+	Vector3 prevForward;
 
 	protected enum State{
 		PickUp,
 		Drop,
-		Rest
+		Reset
 	}
 	State state;
+
+	protected enum MovementState{
+		MovingBase,
+		MovingClaw,
+		MovingArm1,
+		MovingArm2,
+		Stopped
+	}
+	MovementState movementState;
+
+	Vector3 goal;
+	int tries;
 
 	GameObject arm1;
 	GameObject arm2;
@@ -28,79 +41,138 @@ public class Kinematics : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		balls = this.GetComponents<BallGenerator>()[0].GenerateBalls();
-		Debug.Log (balls);
-		Debug.Log (balls.Length);
-
-		balls [0].transform.position = new Vector3(0.0f,1.0f,8.0f);
-		var mat = balls [0].GetComponent<MeshRenderer> ().material;
-		mat.color = Color.green;
 
 		this.state = State.PickUp;
+		this.movementState = MovementState.Stopped;
+		tries = 0;
 
 		this.arm1 = GameObject.Find ("crane_arm_1");
 		this.arm2 = GameObject.Find ("crane_arm_2");
 		this.claw = GameObject.Find ("claw");
 		this.endEffector = GameObject.Find ("end_effector");
+
 		LogLinkRotations ();
 	}
-	
+
 	// Update is called once per frame
 	void Update () {
-		if (Time.frameCount % 10 != 0)
-			return;
-		Debug.Log ($"State: {state}");
-		if (state == State.PickUp) {
-			MoveEndEffectorTo (balls [currentBall].transform.position);
-			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.2f)
-				state = State.Drop;
 
+		if (state == State.PickUp) {
+			goal = balls [currentBall].transform.position;
+			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.2f) {
+				Debug.Log ("Reached ball");
+				tries = 0;
+				this.movementState = MovementState.Stopped;
+				state = State.Drop;
+			} 
+			else if (tries < 16) {
+				InterpolateMovement ();
+			} else {
+				Debug.Log ("Skipping ball");
+				this.movementState = MovementState.Stopped;
+				currentBall++;
+				tries = 0;
+				if (currentBall >= balls.Length)
+					state = State.Reset;
+				goal = balls [currentBall].transform.position;
+			}
 		} else if (state == State.Drop) {
-			MoveEndEffectorTo (dropOffSpot);
+			goal = dropOffSpot;
+			InterpolateMovement ();
 			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.2f) {
 				state = State.PickUp;
+				this.movementState = MovementState.Stopped;
 				currentBall++;
 			}
 			if (currentBall >= balls.Length)
-				state = State.Rest;
-		} else if (state == State.Rest) {
-			//do nothing
+				state = State.Reset;
+		} else if (state == State.Reset) {
+			foreach (var ball in balls) {
+				Destroy (ball);
+			}
+			balls = this.GetComponents<BallGenerator>()[0].GenerateBalls();
+			currentBall = 0;
+
+			state = State.PickUp;
+			this.movementState = MovementState.Stopped;
+			tries = 0;
 		}
-
-
 	}
 
-	void MoveEndEffectorTo(Vector3 goalPosition){
+	private void InterpolateMovement(){
+		t += dt;
+		float angle = prevAngle + t * (nextAngle - prevAngle);
 
-		RotateBase (goalPosition);
-		RotateLink (goalPosition, claw);
-		RotateLink (goalPosition, arm2);
-		RotateLink (goalPosition, arm1);
+		switch (movementState) {
+		case(MovementState.Stopped):
+			prevForward = this.transform.forward;
+			movementState = MovementState.MovingBase;
+			break;
+		case(MovementState.MovingClaw):
+			claw.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			if (t >= 1.0f) {
+				t = 0;
+				movementState = MovementState.MovingArm2;
+				prevAngle = arm2.transform.localEulerAngles.x;
+				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+			}
+			break;
+		case(MovementState.MovingArm1):
+			arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			if (t >= 1.0f) {
+				t = 0;
+				tries++;
+				movementState = MovementState.MovingArm2;
+				prevAngle = arm2.transform.localEulerAngles.x;
+				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+//				movementState = MovementState.MovingClaw;
+//				prevAngle = claw.transform.localEulerAngles.x;
+//				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
+//				nextAngle = clawAngle > 120.0f ? 120.0f : clawAngle;
+			}
+			break;
+		case(MovementState.MovingArm2):
+			arm2.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			if (t >= 1.0f) {
+				t = 0;
+				movementState = MovementState.MovingArm1;
+				prevAngle = arm1.transform.localEulerAngles.x;
+				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
+			}
+			break;
+		case(MovementState.MovingBase):
+			var end = goal - this.transform.position;
+			this.transform.forward = prevForward + t * (end - prevForward);
+			if (t >= 1.0f) {
+				t = 0;
+				movementState = MovementState.MovingArm2;
+				prevAngle = arm2.transform.localEulerAngles.x;
+				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+//				movementState = MovementState.MovingClaw;
+//				prevAngle = claw.transform.localEulerAngles.x;
+//				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
+			}
+			break;
+		default:
+			break;
+		}
 	}
-
-	private void RotateBase (Vector3 goal){
-		var rootToGoal = goal - this.transform.position;
-		this.transform.forward = rootToGoal.normalized;
-	}
-
-	private void RotateLink(Vector3 goal, GameObject link){
+		
+	private float GetLinkAngle(Vector3 goal, GameObject link, float currentAngle){
 		var rootToGoal = goal - link.transform.position;
-		Debug.Log ($"rootToGoal: {rootToGoal}, normalize: {rootToGoal.normalized}");
 		var rootToEnd = endEffector.transform.position - link.transform.position;
-		Debug.Log ($"rootToEnd: {rootToEnd}, normalize: {rootToEnd.normalized}");
 		var dot = Vector3.Dot (rootToGoal.normalized, rootToEnd.normalized);
-		Debug.Log ($"dot: {dot}");
 		var angle = Mathf.Acos(dot)*  Mathf.Rad2Deg;
-		Debug.Log ($"Arm1 Angle: {angle}");
+		Debug.Log ($"New Angle: {angle}, Previous: {currentAngle}, MovementState: {movementState}, Goal: {goal}");
 
-		var cross = Vector3.Cross(rootToGoal,rootToEnd);
-		Debug.Log ($"Arm1 cross: {cross}");
-		var previousAngle = arm1.transform.localEulerAngles.x;
-
-		if(cross.x> 0.0f)
-			link.transform.localEulerAngles = new Vector3 (previousAngle-angle, 0f, 0f);
+		var cross = Vector3.Cross (rootToGoal, rootToEnd);
+		//get the cross product to find the direction of rotation
+		if (cross.x > 0.0f)
+			return currentAngle - angle;
 		else
-			link.transform.localEulerAngles = new Vector3 (previousAngle+angle, 0f, 0f);
+			return currentAngle + angle;
 	}
+
 
 	void LogLinkRotations(){
 		Debug.Log ($"End Effector Position: {endEffector.transform.position}");
