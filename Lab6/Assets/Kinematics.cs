@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Kinematics : MonoBehaviour {
-	Vector3 dropOffSpot = new Vector3 (-8.0f, 1.0f, 8.0f);
+	Vector3 dropOffSpot = new Vector3 (-8.0f, 3.0f, 8.0f);
 	GameObject[] balls;
 	int currentBall = 0;
 
 	float prevAngle;
 	float nextAngle;
-	float dt = 0.01f;
+	float dt = 0.05f;
 	float t = 0.0f;
 
 	Vector3 prevForward;
@@ -17,6 +17,7 @@ public class Kinematics : MonoBehaviour {
 	protected enum State{
 		PickUp,
 		Drop,
+		BallFalling,
 		Reset
 	}
 	State state;
@@ -59,13 +60,13 @@ public class Kinematics : MonoBehaviour {
 
 		if (state == State.PickUp) {
 			goal = balls [currentBall].transform.position;
-			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.2f) {
+			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.3f) {
 				Debug.Log ("Reached ball");
 				tries = 0;
 				this.movementState = MovementState.Stopped;
 				state = State.Drop;
 			} 
-			else if (tries < 16) {
+			else if (tries < 5) {
 				InterpolateMovement ();
 			} else {
 				Debug.Log ("Skipping ball");
@@ -79,10 +80,9 @@ public class Kinematics : MonoBehaviour {
 		} else if (state == State.Drop) {
 			goal = dropOffSpot;
 			InterpolateMovement ();
-			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.2f) {
-				state = State.PickUp;
-				this.movementState = MovementState.Stopped;
-				currentBall++;
+			balls [currentBall].transform.position = endEffector.transform.position;
+			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.3f) {
+				state = State.BallFalling;
 			}
 			if (currentBall >= balls.Length)
 				state = State.Reset;
@@ -97,6 +97,20 @@ public class Kinematics : MonoBehaviour {
 			this.movementState = MovementState.Stopped;
 			tries = 0;
 		}
+		else if (state == State.BallFalling) {
+			var ballPos = balls [currentBall].transform.position;
+			if (ballPos.y > 0.5f) {
+				balls [currentBall].transform.position = new Vector3 (ballPos.x, ballPos.y - .05f, ballPos.z);
+			} else {
+				state = State.PickUp;
+				this.movementState = MovementState.Stopped;
+				currentBall++;
+				if (currentBall >= balls.Length)
+					state = State.Reset;
+				dropOffSpot += Random.insideUnitSphere;
+			}
+			
+		}
 	}
 
 	private void InterpolateMovement(){
@@ -108,7 +122,7 @@ public class Kinematics : MonoBehaviour {
 			prevForward = this.transform.forward;
 			movementState = MovementState.MovingBase;
 			t = 0;
-			break;
+			return;
 		case(MovementState.MovingBase):
 			var end = goal - this.transform.position;
 			this.transform.forward = prevForward + t * (end - prevForward);
@@ -128,7 +142,7 @@ public class Kinematics : MonoBehaviour {
 				Debug.Log ($"clawAngleResult: {clawAngle}");
 				nextAngle = clawAngle;
 			}
-			break;
+			return;
 		case(MovementState.MovingClaw):
 			claw.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
 			if (t >= 1.0f) {
@@ -137,7 +151,7 @@ public class Kinematics : MonoBehaviour {
 				prevAngle = arm2.transform.localEulerAngles.x;
 				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
 			}
-			break;
+			return;
 		case(MovementState.MovingArm2):
 			arm2.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
 			if (t >= 1.0f) {
@@ -146,7 +160,7 @@ public class Kinematics : MonoBehaviour {
 				prevAngle = arm1.transform.localEulerAngles.x;
 				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
 			}
-			break;
+			return;
 		case(MovementState.MovingArm1):
 			arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
 			if (t >= 1.0f) {
@@ -162,7 +176,7 @@ public class Kinematics : MonoBehaviour {
 				clawAngleResult = clawAngle < -30.0f ? -30.0f : clawAngle;
 				nextAngle = clawAngleResult;
 			}
-			break;
+			return;
 		default:
 			break;
 		}
