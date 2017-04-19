@@ -9,7 +9,7 @@ public class Kinematics : MonoBehaviour {
 
 	float prevAngle;
 	float nextAngle;
-	float dt = 0.1f;
+	float dt = 0.01f;
 	float t = 0.0f;
 
 	Vector3 prevForward;
@@ -107,6 +107,27 @@ public class Kinematics : MonoBehaviour {
 		case(MovementState.Stopped):
 			prevForward = this.transform.forward;
 			movementState = MovementState.MovingBase;
+			t = 0;
+			break;
+		case(MovementState.MovingBase):
+			var end = goal - this.transform.position;
+			this.transform.forward = prevForward + t * (end - prevForward);
+			if (t >= 1.0f) {
+				t = 0;
+				//				movementState = MovementState.MovingArm2;
+				//				prevAngle = arm2.transform.localEulerAngles.x;
+				//				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+				movementState = MovementState.MovingClaw;
+				prevAngle = claw.transform.localEulerAngles.x;
+				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
+				if (clawAngle > 90.0f)
+					clawAngle = 90.0f;
+				if (clawAngle < -10.0f)
+					clawAngle = -10.0f;
+				
+				Debug.Log ($"clawAngleResult: {clawAngle}");
+				nextAngle = clawAngle;
+			}
 			break;
 		case(MovementState.MovingClaw):
 			claw.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
@@ -115,20 +136,6 @@ public class Kinematics : MonoBehaviour {
 				movementState = MovementState.MovingArm2;
 				prevAngle = arm2.transform.localEulerAngles.x;
 				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
-			}
-			break;
-		case(MovementState.MovingArm1):
-			arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
-			if (t >= 1.0f) {
-				t = 0;
-				tries++;
-				movementState = MovementState.MovingArm2;
-				prevAngle = arm2.transform.localEulerAngles.x;
-				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
-//				movementState = MovementState.MovingClaw;
-//				prevAngle = claw.transform.localEulerAngles.x;
-//				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
-//				nextAngle = clawAngle > 120.0f ? 120.0f : clawAngle;
 			}
 			break;
 		case(MovementState.MovingArm2):
@@ -140,17 +147,20 @@ public class Kinematics : MonoBehaviour {
 				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
 			}
 			break;
-		case(MovementState.MovingBase):
-			var end = goal - this.transform.position;
-			this.transform.forward = prevForward + t * (end - prevForward);
+		case(MovementState.MovingArm1):
+			arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
 			if (t >= 1.0f) {
 				t = 0;
-				movementState = MovementState.MovingArm2;
-				prevAngle = arm2.transform.localEulerAngles.x;
-				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
-//				movementState = MovementState.MovingClaw;
-//				prevAngle = claw.transform.localEulerAngles.x;
-//				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
+				tries++;
+//				movementState = MovementState.MovingArm2;
+//				prevAngle = arm2.transform.localEulerAngles.x;
+//				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+				movementState = MovementState.MovingClaw;
+				prevAngle = claw.transform.localEulerAngles.x;
+				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
+				var clawAngleResult = clawAngle > 30.0f ? 30.0f : clawAngle;
+				clawAngleResult = clawAngle < -30.0f ? -30.0f : clawAngle;
+				nextAngle = clawAngleResult;
 			}
 			break;
 		default:
