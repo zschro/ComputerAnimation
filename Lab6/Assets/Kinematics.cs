@@ -111,7 +111,9 @@ public class Kinematics : MonoBehaviour {
 			}
 			
 		}
-	}
+        userPickBall();
+
+    }
 
 	private void InterpolateMovement(){
 		t += dt;
@@ -205,5 +207,25 @@ public class Kinematics : MonoBehaviour {
 		Debug.Log ($"Arm2: {arm2.transform.localRotation.eulerAngles}");
 		Debug.Log ($"Claw: {claw.transform.localRotation.eulerAngles}");
 	}
+
+    private void userPickBall()
+    {
+        GameObject clickedBall;
+        if (Input.GetMouseButtonDown(0))
+        {
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hit))
+            {
+                if (hit.collider.name == "Sphere") {
+                    clickedBall = hit.collider.gameObject;
+                    Debug.Log($"Clicked: {clickedBall}");
+                }
+            }
+
+            
+        }
+        
+    }
 
 }
