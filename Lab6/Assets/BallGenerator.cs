@@ -5,9 +5,9 @@ using UnityEngine;
 public class BallGenerator : MonoBehaviour {
 
     int numberOfCubes = 5;
-    float minZ = 2;
+    float minZ = 3;
 	float maxZ = 14;
-	float minX = -3;
+	float minX = -2;
 	float maxX = 12;
 
 	public List<GameObject> GenerateBalls()
