@@ -7,9 +7,9 @@ public class Kinematics : MonoBehaviour {
 	List<GameObject> balls;
 	int currentBallIndex = 0;
 
-	float prevAngle;
-	float nextAngle;
-	float dt = 0.05f;
+	float[] prevLinkageAngles;
+	float[] nextLinkageAngles;
+	float dt = 0.025f;
 	float t = 0.0f;
 
 	Vector3 prevForward;
@@ -50,10 +50,12 @@ public class Kinematics : MonoBehaviour {
 		balls.RemoveAt(0);
 		tries = 0;
 
-		this.arm1 = GameObject.Find ("crane_arm_1");
-		this.arm2 = GameObject.Find ("crane_arm_2");
-		this.claw = GameObject.Find ("claw");
-		this.endEffector = GameObject.Find ("end_effector");
+		arm1 = GameObject.Find ("crane_arm_1");
+		arm2 = GameObject.Find ("crane_arm_2");
+		claw = GameObject.Find ("claw");
+		endEffector = GameObject.Find ("end_effector");
+		prevLinkageAngles = new float[3]{0,0,0};
+		nextLinkageAngles = new float[3]{0,0,0};
 
 		LogLinkRotations ();
 	}
@@ -92,7 +94,7 @@ public class Kinematics : MonoBehaviour {
 			goal = dropOffSpot;
 			InterpolateMovement ();
 			currentBall.transform.position = endEffector.transform.position;
-			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.5f) {
+			if ((endEffector.transform.position - dropOffSpot).magnitude < 1.0f) {
 				state = State.BallFalling;
 			}
 		} else if (state == State.Reset) {
@@ -126,71 +128,86 @@ public class Kinematics : MonoBehaviour {
     }
 
 	private void InterpolateMovement(){
-		t += dt;
-		float angle = prevAngle + t * (nextAngle - prevAngle);
+		float angle;
 
 		switch (movementState) {
 		case(MovementState.Stopped):
 			prevForward = this.transform.forward;
 			movementState = MovementState.MovingBase;
 			t = 0;
-			return;
+			break;
 		case(MovementState.MovingBase):
 			var end = goal - this.transform.position;
+			end.y = 0;
 			this.transform.forward = prevForward + t * (end - prevForward);
-			if (t >= 1.0f) {
+			if (t > 1.0f) {
 				t = 0;
-				//				movementState = MovementState.MovingArm2;
-				//				prevAngle = arm2.transform.localEulerAngles.x;
-				//				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
 				movementState = MovementState.MovingClaw;
-				prevAngle = claw.transform.localEulerAngles.x;
-				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
+				//prevLinkageAngles [0] = claw.transform.localRotation.eulerAngles.x;
+				var clawAngle = GetLinkAngle (goal, claw, prevLinkageAngles[0]);
 				if (clawAngle > 90.0f)
 					clawAngle = 90.0f;
 				if (clawAngle < -10.0f)
 					clawAngle = -10.0f;
 				
-				nextAngle = clawAngle;
+				nextLinkageAngles[0] = clawAngle;
 			}
-			return;
+			break;
 		case(MovementState.MovingClaw):
-			claw.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			angle = nextLinkageAngles[0] + t * (nextLinkageAngles [0] - prevLinkageAngles[0]);
+			claw.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
 			if (t >= 1.0f) {
 				t = 0;
+				prevLinkageAngles [0] = nextLinkageAngles [0];
 				movementState = MovementState.MovingArm2;
-				prevAngle = arm2.transform.localEulerAngles.x;
-				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
+				//prevLinkageAngles [1] = arm2.transform.localRotation.eulerAngles.x;
+				nextLinkageAngles [1] = GetLinkAngle (goal, arm2, prevLinkageAngles [1]);
+				var arm2Angle = GetLinkAngle (goal, arm2, prevLinkageAngles [1]);
+				if (arm2Angle > 130.0f)
+					arm2Angle = 130.0f;
+				if (arm2Angle < -10.0f)
+					arm2Angle = -10.0f;
+				nextLinkageAngles [1] = arm2Angle;
+
 			}
-			return;
+			break;
 		case(MovementState.MovingArm2):
-			arm2.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			angle = prevLinkageAngles [1] + t * (nextLinkageAngles [1] - prevLinkageAngles [1]);
+			arm2.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
 			if (t >= 1.0f) {
 				t = 0;
+				prevLinkageAngles [1] = nextLinkageAngles [1];
 				movementState = MovementState.MovingArm1;
-				prevAngle = arm1.transform.localEulerAngles.x;
-				nextAngle = GetLinkAngle (goal, arm1, prevAngle);
+				var arm1Angle = GetLinkAngle (goal, arm1, prevLinkageAngles [2]);
+				if (arm1Angle > 95.0f)
+					arm1Angle = 95.0f;
+				if (arm1Angle < -10.0f)
+					arm1Angle = -10.0f;
+				//prevLinkageAngles [2] = arm1.transform.localRotation.eulerAngles.x;
+				nextLinkageAngles[2] = arm1Angle;
 			}
-			return;
+			break;
 		case(MovementState.MovingArm1):
-			arm1.transform.localEulerAngles = new Vector3 (angle, 0f, 0f);
+			angle = prevLinkageAngles[2] + t * (nextLinkageAngles[2] - prevLinkageAngles[2]);
+			arm1.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
 			if (t >= 1.0f) {
 				t = 0;
+				prevLinkageAngles[2] = nextLinkageAngles [2];
 				tries++;
-//				movementState = MovementState.MovingArm2;
-//				prevAngle = arm2.transform.localEulerAngles.x;
-//				nextAngle = GetLinkAngle (goal, arm2, prevAngle);
 				movementState = MovementState.MovingClaw;
-				prevAngle = claw.transform.localEulerAngles.x;
-				var clawAngle = GetLinkAngle (goal, claw, prevAngle);
-				var clawAngleResult = clawAngle > 30.0f ? 30.0f : clawAngle;
-				clawAngleResult = clawAngle < -30.0f ? -30.0f : clawAngle;
-				nextAngle = clawAngleResult;
+				//prevLinkageAngles [0] = claw.transform.localRotation.eulerAngles.x;
+				var clawAngle = GetLinkAngle (goal, claw, prevLinkageAngles[0]);
+				if (clawAngle > 90.0f)
+					clawAngle = 90.0f;
+				if (clawAngle < -10.0f)
+					clawAngle = -10.0f;
+				nextLinkageAngles[0] = clawAngle;
 			}
-			return;
+			break;
 		default:
 			break;
 		}
+		t += dt;
 	}
 		
 	private float GetLinkAngle(Vector3 goal, GameObject link, float currentAngle){
@@ -198,7 +215,7 @@ public class Kinematics : MonoBehaviour {
 		var rootToEnd = endEffector.transform.position - link.transform.position;
 		var dot = Vector3.Dot (rootToGoal.normalized, rootToEnd.normalized);
 		var angle = Mathf.Acos(dot)*  Mathf.Rad2Deg;
-		Debug.Log ($"New Angle: {angle}, Previous: {currentAngle}, MovementState: {movementState}, Goal: {goal}");
+		Debug.Log ($"New Angle: {angle}, Previous: {currentAngle}, MovementState: {movementState}, Goal: {goal}, link: {link.name}");
 
 		var cross = Vector3.Cross (rootToGoal, rootToEnd);
 		//get the cross product to find the direction of rotation
