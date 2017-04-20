@@ -5,28 +5,21 @@ using UnityEngine;
 public class BallGenerator : MonoBehaviour {
 
     int numberOfCubes = 5;
-    float cubeMinZ = 2;
-	float cubeMaxZ = 14;
-	float cubeMinX = -3;
-	float cubeMaxX = 12;
+    float minZ = 2;
+	float maxZ = 14;
+	float minX = -3;
+	float maxX = 12;
 
-    Vector3[] cubeLocations;
-
-	public GameObject[] GenerateBalls()
+	public List<GameObject> GenerateBalls()
     {
-		GameObject[] Balls= new GameObject[5];
-        cubeLocations = new Vector3[numberOfCubes];
+		List<GameObject> Balls= new List<GameObject>();
         for (int i = 0; i < numberOfCubes; i++)
         {
-            cubeLocations[i] = new Vector3(Random.Range(cubeMinX, cubeMaxX), 0.5f, Random.Range(cubeMinZ, cubeMaxZ));
-        }
-        for (int i = 0; i < numberOfCubes; i++)
-        {
-			GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-			var mat = cube.GetComponent<MeshRenderer> ().material;
-			mat.color = Color.red;
-            cube.transform.position = cubeLocations[i];
-			Balls [i] = cube;
+			GameObject ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+			var mat = ball.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.blue;
+			ball.transform.position = new Vector3(Random.Range(minX, maxX), 0.5f, Random.Range(minZ, maxZ));
+			Balls.Add (ball);
         }
 		return Balls;
     }

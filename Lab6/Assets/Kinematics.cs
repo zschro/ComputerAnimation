@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class Kinematics : MonoBehaviour {
 	Vector3 dropOffSpot = new Vector3 (-8.0f, 3.0f, 8.0f);
-	GameObject[] balls;
-	int currentBall = 0;
+	List<GameObject> balls;
+	int currentBallIndex = 0;
 
 	float prevAngle;
 	float nextAngle;
@@ -32,6 +32,7 @@ public class Kinematics : MonoBehaviour {
 	MovementState movementState;
 
 	Vector3 goal;
+	GameObject currentBall;
 	int tries;
 
 	GameObject arm1;
@@ -45,6 +46,8 @@ public class Kinematics : MonoBehaviour {
 
 		this.state = State.PickUp;
 		this.movementState = MovementState.Stopped;
+		currentBall = balls [0];
+		balls.RemoveAt(0);
 		tries = 0;
 
 		this.arm1 = GameObject.Find ("crane_arm_1");
@@ -57,10 +60,13 @@ public class Kinematics : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update () {
-
+		Material mat;
 		if (state == State.PickUp) {
-			goal = balls [currentBall].transform.position;
-			if ((endEffector.transform.position - balls [currentBall].transform.position).magnitude < 0.3f) {
+			goal = currentBall.transform.position;
+			mat = currentBall.GetComponent<MeshRenderer> ().material;
+			mat.color = Color.green;
+
+			if ((endEffector.transform.position - currentBall.transform.position).magnitude < 0.4f) {
 				Debug.Log ("Reached ball");
 				tries = 0;
 				this.movementState = MovementState.Stopped;
@@ -71,43 +77,47 @@ public class Kinematics : MonoBehaviour {
 			} else {
 				Debug.Log ("Skipping ball");
 				this.movementState = MovementState.Stopped;
-				currentBall++;
-				tries = 0;
-				if (currentBall >= balls.Length)
+				mat = currentBall.GetComponent<MeshRenderer> ().material;
+				mat.color = Color.red;
+				if (balls.Count > 0) {
+					currentBall = balls [0];
+					balls.RemoveAt (0);
+				}
+				else
 					state = State.Reset;
-				goal = balls [currentBall].transform.position;
+				tries = 0;
+				goal = currentBall.transform.position;
 			}
 		} else if (state == State.Drop) {
 			goal = dropOffSpot;
 			InterpolateMovement ();
-			balls [currentBall].transform.position = endEffector.transform.position;
-			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.3f) {
+			currentBall.transform.position = endEffector.transform.position;
+			if ((endEffector.transform.position - dropOffSpot).magnitude < 0.5f) {
 				state = State.BallFalling;
 			}
-			if (currentBall >= balls.Length)
-				state = State.Reset;
 		} else if (state == State.Reset) {
-			foreach (var ball in balls) {
-				Destroy (ball);
-			}
-			balls = this.GetComponents<BallGenerator>()[0].GenerateBalls();
-			currentBall = 0;
+			balls.AddRange (this.GetComponents<BallGenerator> () [0].GenerateBalls ());
+			currentBall = balls [0];
+			balls.RemoveAt(0);
 
 			state = State.PickUp;
 			this.movementState = MovementState.Stopped;
 			tries = 0;
 		}
 		else if (state == State.BallFalling) {
-			var ballPos = balls [currentBall].transform.position;
+			var ballPos = currentBall.transform.position;
 			if (ballPos.y > 0.5f) {
-				balls [currentBall].transform.position = new Vector3 (ballPos.x, ballPos.y - .05f, ballPos.z);
+				currentBall.transform.position = new Vector3 (ballPos.x, ballPos.y - .25f, ballPos.z);
 			} else {
 				state = State.PickUp;
 				this.movementState = MovementState.Stopped;
-				currentBall++;
-				if (currentBall >= balls.Length)
+				if (balls.Count > 0) {
+					currentBall = balls [0];
+					balls.RemoveAt (0);
+				}
+				else
 					state = State.Reset;
-				dropOffSpot += Random.insideUnitSphere;
+				dropOffSpot += (Random.insideUnitSphere *2.0f);
 			}
 			
 		}
@@ -141,7 +151,6 @@ public class Kinematics : MonoBehaviour {
 				if (clawAngle < -10.0f)
 					clawAngle = -10.0f;
 				
-				Debug.Log ($"clawAngleResult: {clawAngle}");
 				nextAngle = clawAngle;
 			}
 			return;
@@ -219,7 +228,17 @@ public class Kinematics : MonoBehaviour {
             {
                 if (hit.collider.name == "Sphere") {
                     clickedBall = hit.collider.gameObject;
-                    Debug.Log($"Clicked: {clickedBall}");
+					var mat = clickedBall.GetComponent<MeshRenderer> ().material;
+					mat.color = Color.magenta;
+
+					movementState = MovementState.Stopped;
+					state = State.PickUp;
+					balls.Remove (clickedBall);
+					currentBall.transform.position = new Vector3(currentBall.transform.position.x,0.5f,currentBall.transform.position.z);
+					mat = currentBall.GetComponent<MeshRenderer> ().material;
+					mat.color = Color.red;
+
+					currentBall = clickedBall;
                 }
             }
 
