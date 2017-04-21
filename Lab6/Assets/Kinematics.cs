@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Kinematics : MonoBehaviour {
-	Vector3 dropOffSpot = new Vector3 (-8.0f, 3.0f, 8.0f);
+	Vector3 dropOffSpot = new Vector3 (-7.5f, 4.0f, 7.5f);
 	List<GameObject> balls;
-	int currentBallIndex = 0;
 
+	int maxTries = 10;
 	float[] prevLinkageAngles;
 	float[] nextLinkageAngles;
-	float dt = 0.025f;
+	float dt = 0.05f;
 	float t = 0.0f;
 
 	Vector3 prevForward;
+	Vector3 prevUpClaw;
 
 	protected enum State{
 		PickUp,
@@ -68,13 +69,13 @@ public class Kinematics : MonoBehaviour {
 			mat = currentBall.GetComponent<MeshRenderer> ().material;
 			mat.color = Color.green;
 
-			if ((endEffector.transform.position - currentBall.transform.position).magnitude < 0.4f) {
+			if ((endEffector.transform.position - currentBall.transform.position).magnitude < 0.5f) {
 				Debug.Log ("Reached ball");
 				tries = 0;
 				this.movementState = MovementState.Stopped;
 				state = State.Drop;
 			} 
-			else if (tries < 5) {
+			else if (tries < maxTries) {
 				InterpolateMovement ();
 			} else {
 				Debug.Log ("Skipping ball");
@@ -94,7 +95,7 @@ public class Kinematics : MonoBehaviour {
 			goal = dropOffSpot;
 			InterpolateMovement ();
 			currentBall.transform.position = endEffector.transform.position;
-			if ((endEffector.transform.position - dropOffSpot).magnitude < 1.0f) {
+			if ((endEffector.transform.position - dropOffSpot).magnitude < 1.5f) {
 				state = State.BallFalling;
 			}
 		} else if (state == State.Reset) {
@@ -133,6 +134,7 @@ public class Kinematics : MonoBehaviour {
 		switch (movementState) {
 		case(MovementState.Stopped):
 			prevForward = this.transform.forward;
+			prevUpClaw = claw.transform.up;
 			movementState = MovementState.MovingBase;
 			t = 0;
 			break;
@@ -140,89 +142,65 @@ public class Kinematics : MonoBehaviour {
 			var end = goal - this.transform.position;
 			end.y = 0;
 			this.transform.forward = prevForward + t * (end - prevForward);
-			if (t > 1.0f) {
+			t += dt;
+			if (t >= 1.0f) {
 				t = 0;
 				movementState = MovementState.MovingClaw;
-				//prevLinkageAngles [0] = claw.transform.localRotation.eulerAngles.x;
-				var clawAngle = GetLinkAngle (goal, claw, prevLinkageAngles[0]);
-				if (clawAngle > 90.0f)
-					clawAngle = 90.0f;
-				if (clawAngle < -10.0f)
-					clawAngle = -10.0f;
-				
-				nextLinkageAngles[0] = clawAngle;
+				prevUpClaw = claw.transform.up;
 			}
 			break;
 		case(MovementState.MovingClaw):
-			angle = nextLinkageAngles[0] + t * (nextLinkageAngles [0] - prevLinkageAngles[0]);
-			claw.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
+			var f = goal - claw.transform.forward;
+			claw.transform.up = prevUpClaw + t* (f.normalized - prevUpClaw);
+			t += dt;
 			if (t >= 1.0f) {
 				t = 0;
 				prevLinkageAngles [0] = nextLinkageAngles [0];
 				movementState = MovementState.MovingArm2;
-				//prevLinkageAngles [1] = arm2.transform.localRotation.eulerAngles.x;
-				nextLinkageAngles [1] = GetLinkAngle (goal, arm2, prevLinkageAngles [1]);
-				var arm2Angle = GetLinkAngle (goal, arm2, prevLinkageAngles [1]);
-				if (arm2Angle > 130.0f)
-					arm2Angle = 130.0f;
-				if (arm2Angle < -10.0f)
-					arm2Angle = -10.0f;
-				nextLinkageAngles [1] = arm2Angle;
-
+				nextLinkageAngles [1] = prevLinkageAngles [1] + GetLinkAngle (goal, arm2);
+				nextLinkageAngles [1] = nextLinkageAngles [1] > 130.0f ? 130.0f : nextLinkageAngles [1];
+				nextLinkageAngles [1] = nextLinkageAngles [1] < -10.0f ? -10.0f : nextLinkageAngles [1];
 			}
 			break;
 		case(MovementState.MovingArm2):
 			angle = prevLinkageAngles [1] + t * (nextLinkageAngles [1] - prevLinkageAngles [1]);
 			arm2.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
+			t += dt;
 			if (t >= 1.0f) {
 				t = 0;
 				prevLinkageAngles [1] = nextLinkageAngles [1];
 				movementState = MovementState.MovingArm1;
-				var arm1Angle = GetLinkAngle (goal, arm1, prevLinkageAngles [2]);
-				if (arm1Angle > 95.0f)
-					arm1Angle = 95.0f;
-				if (arm1Angle < -10.0f)
-					arm1Angle = -10.0f;
-				//prevLinkageAngles [2] = arm1.transform.localRotation.eulerAngles.x;
-				nextLinkageAngles[2] = arm1Angle;
+				nextLinkageAngles [2] = prevLinkageAngles [2] + GetLinkAngle (goal, arm1);
+				nextLinkageAngles [2] = nextLinkageAngles [2] > 130.0f ? 130.0f : nextLinkageAngles [2];
+				nextLinkageAngles [2] = nextLinkageAngles [2] < -10.0f ? -10.0f : nextLinkageAngles [2];
 			}
 			break;
 		case(MovementState.MovingArm1):
 			angle = prevLinkageAngles[2] + t * (nextLinkageAngles[2] - prevLinkageAngles[2]);
 			arm1.transform.localRotation = Quaternion.Euler (angle, 0f, 0f);
+			t += dt;
 			if (t >= 1.0f) {
 				t = 0;
 				prevLinkageAngles[2] = nextLinkageAngles [2];
 				tries++;
 				movementState = MovementState.MovingClaw;
-				//prevLinkageAngles [0] = claw.transform.localRotation.eulerAngles.x;
-				var clawAngle = GetLinkAngle (goal, claw, prevLinkageAngles[0]);
-				if (clawAngle > 90.0f)
-					clawAngle = 90.0f;
-				if (clawAngle < -10.0f)
-					clawAngle = -10.0f;
-				nextLinkageAngles[0] = clawAngle;
+				prevUpClaw = claw.transform.up;
 			}
 			break;
 		default:
 			break;
 		}
-		t += dt;
 	}
 		
-	private float GetLinkAngle(Vector3 goal, GameObject link, float currentAngle){
+	private float GetLinkAngle(Vector3 goal, GameObject link){
 		var rootToGoal = goal - link.transform.position;
 		var rootToEnd = endEffector.transform.position - link.transform.position;
 		var dot = Vector3.Dot (rootToGoal.normalized, rootToEnd.normalized);
 		var angle = Mathf.Acos(dot)*  Mathf.Rad2Deg;
-		Debug.Log ($"New Angle: {angle}, Previous: {currentAngle}, MovementState: {movementState}, Goal: {goal}, link: {link.name}");
+		Debug.Log ($"New Angle: {angle}, MovementState: {movementState}, Goal: {goal}, link: {link.name}");
 
 		var cross = Vector3.Cross (rootToGoal, rootToEnd);
-		//get the cross product to find the direction of rotation
-		if (cross.x > 0.0f)
-			return currentAngle - angle;
-		else
-			return currentAngle + angle;
+		return cross.x >= 0.0f ? -angle : angle;
 	}
 
 
